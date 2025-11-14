@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="MyErp.Api/MyErp.Api.csproj" />
   <Project Path="MyErp.Core/MyErp.Core.csproj" />
+  <Project Path="MyErp.EF/MyErp.EF.csproj" />
 </Solution>
