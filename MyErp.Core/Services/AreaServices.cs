@@ -19,10 +19,16 @@ public class AreaServices
         _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
+
     public async Task<MainResponse<Area>> getAreaList()
     {
         MainResponse<Area> response = new MainResponse<Area>();
         var area = await _unitOfWork.Areas.GetAll();
+        if(area == null || area.Count() == 0)
+        {
+            response.errors.Add("There is no Areas Found ):}");
+            return response;
+        }
         response.acceptedObjects = area.ToList();
         return response;
     }
@@ -100,8 +106,6 @@ public class AreaServices
 
         return response;
     }
-
-
     public async Task<MainResponse<Area>> addArea(List<AreaDTO> area)
     {
         MainResponse<Area> response = new MainResponse<Area>();

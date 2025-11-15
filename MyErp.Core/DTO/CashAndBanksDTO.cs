@@ -17,4 +17,6 @@ public class CashAndBanksDTO
     public decimal CurrentBalance { get; set; } = 0;
     public decimal TotalInflow { get; set; } = 0;
     public decimal TotalOutflow { get; set; } = 0;
+    public int TreasuryNo { get; set; }
+
 }

@@ -110,29 +110,45 @@ namespace MyErp.Core.Mapping
             //            CreateMap<Customer, CustomerDTO>();
 
             CreateMap<Area, AreaDTO>().ReverseMap();
+            CreateMap<Branch, BranchDTO>().ReverseMap();
+            CreateMap<CashAndBanks, CashAndBanksDTO>().ReverseMap();
+            CreateMap<CashFlow, CashFlowDTO>().ReverseMap();
+            CreateMap<Category, CategoryDTO>().ReverseMap();
+            CreateMap<Currency, CurrencyDTO>().ReverseMap();
+            CreateMap<Customer, CustomerDTO>().ReverseMap();
+            CreateMap<Employee, EmployeeDTO>().ReverseMap();
+            CreateMap<Orderme, OrdermeDTO>().ReverseMap();
+            CreateMap<Ordermedetail, OrdermedetailDTO>().ReverseMap();
+            CreateMap<Product, ProductDTO>().ReverseMap();
+            CreateMap<ProductType, ProductTypeDTO>().ReverseMap();
+            CreateMap<SalesMan, SalesManDTO>().ReverseMap();
+            CreateMap<Stock, StockDTO>().ReverseMap();
+            CreateMap<StockActionDetails, StockActionDetailsDTO>().ReverseMap();
+            CreateMap<StockActions, StockActionsDTO>().ReverseMap();
+            CreateMap<StockActiontransfer, StockActiontransferDTO>().ReverseMap();
+            CreateMap<StockReq, StockReqDTO>().ReverseMap();
+            CreateMap<StockReqDetail, StockReqDetailDTO>().ReverseMap();
+            CreateMap<StockTaking, StockTakingDTO>().ReverseMap();
+            CreateMap<Treasury, TreasuryDTO>().ReverseMap();
+            CreateMap<User, UserDTO>().ReverseMap();
 
-            //            CreateMap<ProductType, ProductTypeDTO>().ReverseMap();
-
-            //            CreateMap<SalesMan, SalesManDTO>().ReverseMap();
-
-            //        }
-            //    }
+                    }
+                }
 
 
-            //    public class Mapping<T, X> : Profile
-            //    {
-            //        public Mapping()
-            //        {
-            //            CreateMap<T, X>();
-            //            /*CreateMap<T, X>()
-            //                .ForMember(dest => dest.Orderdetails, opt => opt.MapFrom(src => src.Orderdetails));
+                public class Mapping<T, X> : Profile
+        {
+            public Mapping()
+            {
+                CreateMap<T, X>();
+                /*CreateMap<T, X>()
+                    .ForMember(dest => dest.Orderdetails, opt => opt.MapFrom(src => src.Orderdetails));
 
-            //            CreateMap<OrderDetails, orderDetailsDTO>()
-            //                .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString())); // Assuming ProductId should be a string in DTO*/
-            //        }
-            //        ///
+                CreateMap<OrderDetails, orderDetailsDTO>()
+                    .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString())); // Assuming ProductId should be a string in DTO*/
+            }
+            ///
 
 
         }
     }
-}

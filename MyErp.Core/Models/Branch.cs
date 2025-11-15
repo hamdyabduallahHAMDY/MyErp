@@ -14,7 +14,6 @@ public class Branch : Common
     public string latitude { get; set; }
     public string logo { get; set; }
     public string status { get; set; }
-
     public string Governate { get; set; }
     public string Street { get; set; }
     public string RegionCity { get; set; }

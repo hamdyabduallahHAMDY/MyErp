@@ -90,7 +90,6 @@ public class CashAndBanksServices
 
         return response;
     }
-
     public async Task<MainResponse<CashAndBanks>> addCashAndBanks(List<CashAndBanksDTO> cashAndBanks)
     {
         MainResponse<CashAndBanks> response = new MainResponse<CashAndBanks>();
@@ -134,4 +133,9 @@ public class CashAndBanksServices
         response.acceptedObjects = new List<CashAndBanks> { cashAndBanks.First() };
         return response;
     }
+    //public async Task<CashAndBanks> CreateTreasury_CashAndBanks(CashAndBanksDTO dto)
+    //{
+    //    return dto;
+    //}
+
 }
