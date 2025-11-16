@@ -101,8 +101,12 @@ public class CashAndBanksServices
             List<CashAndBanks> rejectedcashAndBanks = _mapper.Map<List<CashAndBanks>>(validList.rejectedObjects);
             if (cashAndBankslist != null && cashAndBankslist.Count() > 0)
             {
+                foreach (var caandbank in cashAndBankslist) { 
+
+                int treasuryCode = await CreateTreasuryAsync(caandbank.Name);
                 var cashAndBankslists = await _unitOfWork.CashAndBankss.Add(cashAndBankslist);
                 response.acceptedObjects = cashAndBankslist;
+            }
             }
             if (rejectedcashAndBanks != null && rejectedcashAndBanks.Count() > 0)
             {
@@ -133,9 +137,28 @@ public class CashAndBanksServices
         response.acceptedObjects = new List<CashAndBanks> { cashAndBanks.First() };
         return response;
     }
-    //public async Task<CashAndBanks> CreateTreasury_CashAndBanks(CashAndBanksDTO dto)
-    //{
-    //    return dto;
-    //}
+    private async Task<int> CreateTreasuryAsync(string treasuryName)
+    {
+        var treasuries = await _unitOfWork.Treasurys.GetAll(t => t.ParentId == null);
+
+        var lastCode = treasuries.Any()
+            ? treasuries.Max(t => t.Code)
+            : 0;
+
+        string newCode = lastCode == 0 ? "120101" : (lastCode + 1).ToString();
+
+        var treasury = new Treasury
+        {
+            Code = int.Parse(newCode),
+            Name = treasuryName,
+            ParentId = null,
+            Type = AccountType.Other,
+            IsActive = true
+        };
+
+        await _unitOfWork.Treasurys.Add(treasury);
+        await _unitOfWork.Complete();
+        return treasury.Code;
+    }
 
 }

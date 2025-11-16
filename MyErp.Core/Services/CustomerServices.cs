@@ -47,7 +47,7 @@ public class CustomerServices
 
         try
         {
-            var validList = await ValidateDTO.CustomerDTO(customerUpdated , true);
+            var validList = await ValidateDTO.CustomerDTO(customerUpdated, true);
 
             var existingCustomer = await _unitOfWork.Customers.GetFirst(a => a.Id == id);
             if (existingCustomer is null)
@@ -90,7 +90,6 @@ public class CustomerServices
 
         return response;
     }
-
     public async Task<MainResponse<Customer>> addCustomer(List<CustomerDTO> customer)
     {
         MainResponse<Customer> response = new MainResponse<Customer>();
@@ -102,16 +101,24 @@ public class CustomerServices
             List<Customer> rejectedcustomer = _mapper.Map<List<Customer>>(validList.rejectedObjects);
             if (customerlist != null && customerlist.Count() > 0)
             {
-                var customerlists = await _unitOfWork.Customers.Add(customerlist);
-                response.acceptedObjects = customerlist;
-            }
-            if (rejectedcustomer != null && rejectedcustomer.Count() > 0)
-            {
-                List<String> err = (validList.errors);
-                response.rejectedObjects = rejectedcustomer;
-                response.errors = err;
+                foreach (var caandbank in customerlist)
+                {
+
+                    int treasuryCode = await CreateTreasuryAsync(caandbank.EntityType, caandbank.Name);
+                    var cashAndBankslists = await _unitOfWork.Customers.Add(customerlist);
+                    response.acceptedObjects = customerlist;
+                  
+                }
+
+                if (rejectedcustomer != null && rejectedcustomer.Count() > 0)
+                {
+                    List<String> err = (validList.errors);
+                    response.rejectedObjects = rejectedcustomer;
+                    response.errors = err;
+                }
             }
             return response;
+
         }
         catch (Exception ex)
         {
@@ -133,5 +140,50 @@ public class CustomerServices
         }
         response.acceptedObjects = new List<Customer> { customer.First() };
         return response;
+    }
+    private async Task<int> CreateTreasuryAsync(EntityType entityType, string treasuryName)
+    {
+        if (entityType == EntityType.Supplier)
+        {
+            var treasuries = await _unitOfWork.Treasurys.GetAll(t => t.ParentId == 12);
+
+            var lastCode = treasuries.Any()
+                ? treasuries.Max(t => t.Code)
+                : 0;
+            string newCode = lastCode == 0 ? "220201" : (lastCode + 1).ToString();
+
+            var treasury = new Treasury
+            {
+                Code = int.Parse(newCode),
+                Name = treasuryName,
+                ParentId = 12,
+                Type = AccountType.Other,
+                IsActive = true
+            };
+            await _unitOfWork.Treasurys.Add(treasury);
+            await _unitOfWork.Complete();
+            return treasury.Code;
+        }
+        else
+        {
+            var treasuries = await _unitOfWork.Treasurys.GetAll(t => t.ParentId == 12);
+
+            var lastCode = treasuries.Any()
+                ? treasuries.Max(t => t.Code)
+                : 0;
+            string newCode = lastCode == 0 ? "120201" : (lastCode + 1).ToString();
+
+            var treasury = new Treasury
+            {
+                Code = int.Parse(newCode),
+                Name = treasuryName,
+                ParentId = 11,
+                Type = AccountType.Other,
+                IsActive = true
+            };
+            await _unitOfWork.Treasurys.Add(treasury);
+            await _unitOfWork.Complete();
+            return treasury.Code;
+        }
     }
 }

@@ -208,7 +208,7 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var customer in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers  where InternalId = '{customer.InternalId}'");
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from customers  where InternalId = '{customer.InternalId}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.InternalId));

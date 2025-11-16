@@ -15,8 +15,6 @@ public class CashAndBanksDTO
     public decimal treasuryCode { get; set; }
     public Boolean isActive { get; set; } = true;
     public decimal CurrentBalance { get; set; } = 0;
-    public decimal TotalInflow { get; set; } = 0;
-    public decimal TotalOutflow { get; set; } = 0;
-    public int TreasuryNo { get; set; }
+
 
 }

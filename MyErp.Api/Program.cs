@@ -26,6 +26,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddAutoMapper(typeof(Mapping));
+var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
+
+MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
+
 
 var app = builder.Build();
 
