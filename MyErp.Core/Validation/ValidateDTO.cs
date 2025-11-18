@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MyErp.Core.DTO;
+﻿using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Models;
-using MyErp.Core.Services;
 namespace MyErp.Core.Validation
 {
     public static class ValidateDTO
     {
-        public async static Task<MainResponse<AreaDTO>> AreaDTO(List<AreaDTO> insertDTO ,bool isupdate = false)
+        public async static Task<MainResponse<AreaDTO>> AreaDTO(List<AreaDTO> insertDTO, bool isupdate = false)
         {
             MainResponse<AreaDTO> response = new MainResponse<AreaDTO>();
             Errors<AreaDTO> err = new Errors<AreaDTO>();
@@ -251,28 +245,148 @@ namespace MyErp.Core.Validation
             return response;
         }
 
-        public async static Task<MainResponse<OrdermeDTO>> OrdermeDTO(List<OrdermeDTO> insertDTO, bool isupdate = false)
+        public async static Task<MainResponse<OrderCreateDTO>> OrdermeDTO(List<OrderCreateDTO> insertDTO, bool isupdate = false)
         {
-            MainResponse<OrdermeDTO> response = new MainResponse<OrdermeDTO>();
-            Errors<OrdermeDTO> err = new Errors<OrdermeDTO>();
-            bool hasError = false;
-            foreach (var orderme in insertDTO)
+            var response = new MainResponse<OrderCreateDTO>();
+
+            if (insertDTO == null || !insertDTO.Any())
+                return response;
+
+            foreach (var order in insertDTO)
             {
-                var DBorderme = await ADO.GetExecuteQueryMySql<Models.Orderme>($"select * from Ordermes  where internalId = '{orderme.internalId}'");
-                if (DBorderme.Count() > 0 && !isupdate)
+                // 1) Duplicate internalId
+                var existing = await ADO.GetExecuteQueryMySql<Orderme>(
+                    $"SELECT * FROM ordermes WHERE internalId = '{order.InternalId}'"
+                );
+                if (existing.Any() && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(orderme.internalId));
-                    response.rejectedObjects.Add(orderme);
-                    hasError = true;
+                    (response.errors ??= new List<string>())
+                        .Add($"Order with InternalId '{order.InternalId}' already exists.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
                     continue;
                 }
 
-                if (hasError)
+                //if (order.OrderType.ToInt() == 7)
+                //{
+                //    if (!System.Enum.IsDefined(typeof(BaseOrderType), order.baseordertype))
+                //    {
+                //        (response.errors ??= new List<string>())
+                //            .Add($"Invalid OrderType: {order.baseordertype}");
+                //        (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                //        continue;
+                //    }
+                //    (response.acceptedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                //    continue;
+                //}
+
+                // 2) Enums
+                if (!System.Enum.IsDefined(typeof(OrderType), order.OrderType))
                 {
+                    (response.errors ??= new List<string>())
+                        .Add($"Invalid OrderType: {order.OrderType}");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
                     continue;
                 }
-                response.acceptedObjects.Add(orderme);
+                if (order.wayofpayemnt == null || !System.Enum.IsDefined(typeof(paymentmesod), order.wayofpayemnt))
+                {
+                    (response.errors ??= new List<string>())
+                        .Add($"Invalid wayofpayemnt: {order.wayofpayemnt}");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                // 3) Relations
+                var currency = await ADO.GetExecuteQueryMySql<Currency>(
+                    $"SELECT * FROM currencies WHERE Id = '{order.CurrencyId}'");
+                if (!currency.Any())
+                {
+                    (response.errors ??= new List<string>())
+                        .Add($"Currency with Id={order.CurrencyId} not found.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                var customer = await ADO.GetExecuteQueryMySql<Customer>(
+                    $"SELECT * FROM customers WHERE Id = '{order.customerId}'");
+                if (!customer.Any())
+                {
+                    (response.errors ??= new List<string>())
+                        .Add($"Customer with Id={order.customerId} not found.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                var stock = await ADO.GetExecuteQueryMySql<Stock>(
+                    $"SELECT * FROM stocks WHERE Id = '{order.StockId}'");
+                if (!stock.Any())
+                {
+                    (response.errors ??= new List<string>())
+                        .Add($"Stock with Id={order.StockId} not found.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                var cash = await ADO.GetExecuteQueryMySql<CashAndBanks>(
+                    $"SELECT * FROM cashandbanks WHERE Id = '{order.CashAndBankId}'");
+                if (!cash.Any())
+                {
+                    (response.errors ??= new List<string>())
+                        .Add($"cashandbanks with Id={order.CashAndBankId} not found.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                // 4) Structural details
+                if (order.OrdermeDetails == null || !order.OrdermeDetails.Any())
+                {
+                    (response.errors ??= new List<string>())
+                        .Add("Order must contain at least one detail line.");
+                    (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                    continue;
+                }
+
+                bool lineError = false;
+                foreach (var d in order.OrdermeDetails)
+                {
+                    var prod = await ADO.GetExecuteQueryMySql<Product>(
+                    $"SELECT * FROM products WHERE Id = '{d.ProductId}'");
+                    if (!prod.Any())
+                    {
+
+                        (response.errors ??= new List<string>())
+                            .Add($"Product with Id={d.ProductId} not found (InvoiceId={order.InternalId}).");
+                        (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                        lineError = true;
+                        break;
+                    }
+                    var categ = await ADO.GetExecuteQueryMySql<Category>(
+                       $"SELECT * FROM categories WHERE Id = '{d.categoryId}'");
+                    if (!categ.Any())
+                    {
+                        (response.errors ??= new List<string>())
+                            .Add($"Category with Id={d.categoryId} not found (InvoiceId={order.InternalId}).");
+                        (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                        lineError = true;
+                        break;
+                    }
+
+                    if (d.qty <= 0)
+                    {
+                        (response.errors ??= new List<string>())
+                            .Add($"Quantity must be > 0 for ProductId={d.ProductId} (InvoiceId={order.InternalId}).");
+                        (response.rejectedObjects ??= new List<OrderCreateDTO>()).Add(order);
+                        lineError = true;
+                        break;
+                    }
+                }
+                if (lineError) continue;
+
+
+
+                // 6) Accept
+                (response.acceptedObjects ??= new List<OrderCreateDTO>()).Add(order);
             }
+
             return response;
         }
 

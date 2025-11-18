@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Logger;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
@@ -18,6 +18,45 @@ public class CashFlowServices
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+    }
+    public async Task<CashFlow> RecordCashMovementAsync(
+   int cashAndBankId,
+   int ordermeId,
+   decimal amount,
+   bool isInflow,
+   string orderTypeName,
+   string cust
+)
+    {
+        var cashBank = await _unitOfWork.CashAndBankss.GetById(cashAndBankId);
+        if (cashBank == null || !cashBank.isActive)
+            throw new Exception($"Invalid or inactive Cash/Bank account ID: {cashAndBankId}");
+
+        if (!isInflow && cashBank.CurrentBalance < amount)
+            throw new Exception($"Insufficient funds in {cashBank.Name}. Available: {cashBank.CurrentBalance}, Needed: {amount}");
+
+        cashBank.CurrentBalance += (isInflow ? +amount : -amount);
+        if (isInflow)
+            cashBank.TotalInflow += amount;
+        else
+            cashBank.TotalOutflow += amount;
+
+        var flow = new CashFlow
+        {
+            CashAndBankId = cashAndBankId,
+            OrdermeId = ordermeId,
+            Amount = amount,
+            IsInflow = isInflow,
+            BalanceAfter = cashBank.CurrentBalance,
+            ordertype = orderTypeName,       // <── Save it here
+            CreatedAt = DateTime.Now,
+            Customer = cust
+        };
+
+        await _unitOfWork.CashFlows.Add(flow);
+        await _unitOfWork.CashAndBankss.Update(cashBank);
+
+        return flow;
     }
     public async Task<MainResponse<CashFlow>> getCashFlowList()
     {
@@ -47,7 +86,7 @@ public class CashFlowServices
 
         try
         {
-            var validList = await ValidateDTO.CashFlowDTO(cashFlowUpdated , true);
+            var validList = await ValidateDTO.CashFlowDTO(cashFlowUpdated, true);
 
             var existingCashFlow = await _unitOfWork.CashFlows.GetFirst(a => a.Id == id);
             if (existingCashFlow is null)

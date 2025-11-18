@@ -1,15 +1,165 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
+using MyErp.Core.Services;
+using System.Text.RegularExpressions;
 
 namespace MyErp.Core.Validation
 {
     public static class ValidationUtilities
+
     {
+        //ERP
+        //=========TotalCalc==================
+
+        public static void CalculateOrderTotal(Orderme entity)
+        {
+
+            var Final = entity.TotalPrice;
+
+
+            foreach (var d in entity.Ordermedetails)
+            {
+                d.total = d.qty * d.price;
+                d.total = d.total + d.tax;
+                d.total = d.total - d.discount;
+                Final += d.total;
+            }
+            var FinDiscount = entity.totDiscount;
+            var NetTotal = Final - FinDiscount;
+            entity.TotalPrice = NetTotal;
+        }
+
+
+        //======Fill Some Things========================
+
+        public static void FillSomeVariables(IUnitOfWork uow, Orderme order)
+        {
+
+            order.treasuryAcc = TreasuryServices.GetCode((int)order.orderType);
+            var custname = uow.Customers.GetById(order.customerId);
+            order.CustomerName = custname.Result.Name;
+            order.CustomerCountry = custname.Result.Country;
+            order.CustomerPhone = custname.Result.Country;
+
+
+        }
+
+
+
+
+
+
+        // ========= STOCK and CASH  VALIDATION =========
+
+        public static async Task<List<string>> ValidateStockAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
+        {
+            var errors = new List<string>();
+            if (orders == null)
+                return errors;
+
+            foreach (var order in orders)
+            {
+
+                var lines = order?.Ordermedetails;
+                if (lines == null || lines.Count == 0)
+                    continue;
+
+                // Order type → sign
+                //isSalesOrSalesCredit || isPurchaseOrPurchsaceCredit
+                int ot = Convert.ToInt32((int)order.orderType);
+                bool isSales = (ot == 0 || ot == 2);
+                bool isPurchase = (ot == 1 || ot == 5);
+                bool isSalesReturn = (ot == 3);
+                bool isPurchaseReturn = (ot == 4);
+
+                int sign = (isSales || isPurchaseReturn) ? -1 : +1;
+
+                foreach (var d in lines)
+                {
+                    // prefer per-line StockId if your model supports it; fallback to order.StockId
+                    int stockId = TryGetDetailStockId(d) ?? order.StockId;
+
+                    if (d.ProductId <= 0 || stockId <= 0)
+                        continue;
+
+                    var last = (await uow.StockActionDetailss
+                        .Find(x => x.ProductId == d.ProductId && x.StockId == stockId))
+                        .OrderByDescending(x => x.Id)
+                        .FirstOrDefault();
+
+                    int prevFinal = last?.FinalValue ?? 0;
+
+                    // if we're removing from stock, ensure enough exists
+                    if (sign < 0 && prevFinal < d.qty)
+                    {
+                        errors.Add($"Cannot remove {d.qty} of ProductId {d.ProductId} from Stock {stockId}. Available: {prevFinal}. Order #{order.internalId}.");
+                    }
+                }
+            }
+
+            return errors;
+
+            // local helper to read a nullable int property named "StockId" on the detail, if it exists
+            static int? TryGetDetailStockId(Ordermedetail detail)
+            {
+                // if your detail has a StockId property, switch to: return detail.StockId;
+                var pi = detail.GetType().GetProperty("StockId");
+                if (pi == null) return null;
+                var raw = pi.GetValue(detail);
+                return raw as int? ?? (raw is int v ? v : (int?)null);
+            }
+        }
+        public static async Task<List<string>> ValidateCashAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
+        {
+            var errors = new List<string>();
+            if (orders == null)
+                return errors;
+
+            foreach (var order in orders)
+            {
+                // Parse enum safely
+                if (!Enum.IsDefined(typeof(OrderType), order.orderType))
+                    continue;
+
+                var type = (OrderType)order.orderType;
+                var basetype = (BaseOrderType)order.baseordertype;
+                // These order types require cash OUT validation (must have enough in account)
+                bool requiresOutflowCheck = type == OrderType.Purchase
+                                         || type == OrderType.ReturnSale
+                                         || type == OrderType.CreditPurchase
+                                         || basetype == BaseOrderType.orderpurhcase;
+
+                if (!requiresOutflowCheck)
+                    continue;
+
+                var account = await uow.CashAndBankss.GetById(order.CashAndBankId);
+
+
+                // For CreditPurchase: use creditpayed (actual payment now). For others: use TotalPrice.
+                decimal amountToCheck =
+                    type == OrderType.CreditPurchase
+                    ? (decimal)order.CreditPayment
+                    : order.TotalPrice;
+
+                if (account.CurrentBalance < amountToCheck)
+                {
+                    errors.Add($"Not enough balance in {account.Name}. Needed: {amountToCheck}, available: {account.CurrentBalance}.");
+                    return errors;
+                }
+            }
+
+            return errors;
+        }
+
+        //========= Finished Validation ================
+
+
+
+
+
+
+
+        //END ERP
         //-----public usage validation methods-----//
         public static bool CheckIsPositiveValue(this decimal? value, bool isQty)
         {

@@ -1,16 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security;
-using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
-using System.Transactions;
-using AutoMapper;
+﻿using AutoMapper;
 using MyErp.Core.DTO;
 using MyErp.Core.Models;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace MyErp.Core.Mapping
 {
     public class Mapping : Profile
@@ -131,24 +121,24 @@ namespace MyErp.Core.Mapping
             CreateMap<StockTaking, StockTakingDTO>().ReverseMap();
             CreateMap<Treasury, TreasuryDTO>().ReverseMap();
             CreateMap<User, UserDTO>().ReverseMap();
-
-                    }
-                }
-
-
-                public class Mapping<T, X> : Profile
-        {
-            public Mapping()
-            {
-                CreateMap<T, X>();
-                /*CreateMap<T, X>()
-                    .ForMember(dest => dest.Orderdetails, opt => opt.MapFrom(src => src.Orderdetails));
-
-                CreateMap<OrderDetails, orderDetailsDTO>()
-                    .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString())); // Assuming ProductId should be a string in DTO*/
-            }
-            ///
-
-
+            CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
         }
     }
+
+
+    public class Mapping<T, X> : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<T, X>();
+            /*CreateMap<T, X>()
+                .ForMember(dest => dest.Orderdetails, opt => opt.MapFrom(src => src.Orderdetails));
+
+            CreateMap<OrderDetails, orderDetailsDTO>()
+                .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString())); // Assuming ProductId should be a string in DTO*/
+        }
+        ///
+
+
+    }
+}

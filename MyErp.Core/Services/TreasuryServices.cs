@@ -47,7 +47,7 @@ public class TreasuryServices
 
         try
         {
-            var validList = await ValidateDTO.TreasuryDTO(treasuryUpdated , true);
+            var validList = await ValidateDTO.TreasuryDTO(treasuryUpdated, true);
 
             var existingTreasury = await _unitOfWork.Treasurys.GetFirst(a => a.Id == id);
             if (existingTreasury is null)
@@ -133,5 +133,18 @@ public class TreasuryServices
         }
         response.acceptedObjects = new List<Treasury> { treasury.First() };
         return response;
+    }
+    public static string GetCode(int orderType)
+    {
+        return orderType switch
+        {
+            0 => "160101", // Sale
+            1 => "260101", // Purchase
+            2 => "160102", // Credit Sale
+            3 => "260103", // Return Sale
+            4 => "160103", // Return Purchase
+            5 => "260102", // Credit Purchase
+            7 => "offerorPending"
+        };
     }
 }

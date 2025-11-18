@@ -23,7 +23,7 @@ public class Orderme : Common
     public decimal totDiscount { get; set; }
     public decimal TotalPrice { get; set; }
     public List<Ordermedetail> Ordermedetails { get; set; }
-   // public List<JornalEntry> JornalEntry { get; set; } = new List<JornalEntry>();
+    // public List<JornalEntry> JornalEntry { get; set; } = new List<JornalEntry>();
     public CashAndBanks CashAndBank { get; set; }
     public int CashAndBankId { get; set; }
     public string? barcode { get; set; }
