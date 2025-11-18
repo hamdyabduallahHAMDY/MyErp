@@ -1,17 +1,6 @@
-using AutoMapper;
-using Logger;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using MyErp.Core.Global;
 using MyErp.Core.Mapping;
-using License;
 using MyErp.EF.DataAccess;
-using MyErp.EF.Repositories;
-using Microsoft.Extensions.DependencyInjection;
-using MySqlX.XDevAPI;
-using AutoMapper;
-using Org.BouncyCastle.Utilities;
-using MyErp.Core.Mapping;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -30,7 +19,10 @@ var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
 
 MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
 
-
+//builder.WebHost.UseKestrel(options =>
+//{
+//    options.Listen(System.Net.IPAddress.Parse("192.168.1.20"), 1234);
+//});
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
