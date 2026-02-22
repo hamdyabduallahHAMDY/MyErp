@@ -11,145 +11,145 @@ namespace MyErp.Core.Validation
         //ERP
         //=========TotalCalc==================
 
-        public static void CalculateOrderTotal(Orderme entity)
-        {
+        //public static void CalculateOrderTotal(Orderme entity)
+        //{
 
-            var Final = entity.TotalPrice;
-
-
-            foreach (var d in entity.Ordermedetails)
-            {
-                d.total = d.qty * d.price;
-                d.total = d.total + d.tax;
-                d.total = d.total - d.discount;
-                Final += d.total;
-            }
-            var FinDiscount = entity.totDiscount;
-            var NetTotal = Final - FinDiscount;
-            entity.TotalPrice = NetTotal;
-        }
+        //    var Final = entity.TotalPrice;
 
 
-        //======Fill Some Things========================
-
-        public static void FillSomeVariables(IUnitOfWork uow, Orderme order)
-        {
-
-            order.treasuryAcc = TreasuryServices.GetCode((int)order.orderType);
-            var custname = uow.Customers.GetById(order.customerId);
-            order.CustomerName = custname.Result.Name;
-            order.CustomerCountry = custname.Result.Country;
-            order.CustomerPhone = custname.Result.Country;
-
-
-        }
+        //    foreach (var d in entity.Ordermedetails)
+        //    {
+        //        d.total = d.qty * d.price;
+        //        d.total = d.total + d.tax;
+        //        d.total = d.total - d.discount;
+        //        Final += d.total;
+        //    }
+        //    var FinDiscount = entity.totDiscount;
+        //    var NetTotal = Final - FinDiscount;
+        //    entity.TotalPrice = NetTotal;
+        //}
 
 
+        ////======Fill Some Things========================
+
+        //public static void FillSomeVariables(IUnitOfWork uow, Orderme order)
+        //{
+
+        //    order.treasuryAcc = TreasuryServices.GetCode((int)order.orderType);
+        //    var custname = uow.Customers.GetById(order.customerId);
+        //    order.CustomerName = custname.Result.Name;
+        //    order.CustomerCountry = custname.Result.Country;
+        //    order.CustomerPhone = custname.Result.Country;
+
+
+        //}
 
 
 
 
-        // ========= STOCK and CASH  VALIDATION =========
-
-        public static async Task<List<string>> ValidateStockAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
-        {
-            var errors = new List<string>();
-            if (orders == null)
-                return errors;
-
-            foreach (var order in orders)
-            {
-
-                var lines = order?.Ordermedetails;
-                if (lines == null || lines.Count == 0)
-                    continue;
-
-                // Order type → sign
-                //isSalesOrSalesCredit || isPurchaseOrPurchsaceCredit
-                int ot = Convert.ToInt32((int)order.orderType);
-                bool isSales = (ot == 0 || ot == 2);
-                bool isPurchase = (ot == 1 || ot == 5);
-                bool isSalesReturn = (ot == 3);
-                bool isPurchaseReturn = (ot == 4);
-
-                int sign = (isSales || isPurchaseReturn) ? -1 : +1;
-
-                foreach (var d in lines)
-                {
-                    // prefer per-line StockId if your model supports it; fallback to order.StockId
-                    int stockId = TryGetDetailStockId(d) ?? order.StockId;
-
-                    if (d.ProductId <= 0 || stockId <= 0)
-                        continue;
-
-                    var last = (await uow.StockActionDetailss
-                        .Find(x => x.ProductId == d.ProductId && x.StockId == stockId))
-                        .OrderByDescending(x => x.Id)
-                        .FirstOrDefault();
-
-                    int prevFinal = last?.FinalValue ?? 0;
-
-                    // if we're removing from stock, ensure enough exists
-                    if (sign < 0 && prevFinal < d.qty)
-                    {
-                        errors.Add($"Cannot remove {d.qty} of ProductId {d.ProductId} from Stock {stockId}. Available: {prevFinal}. Order #{order.internalId}.");
-                    }
-                }
-            }
-
-            return errors;
-
-            // local helper to read a nullable int property named "StockId" on the detail, if it exists
-            static int? TryGetDetailStockId(Ordermedetail detail)
-            {
-                // if your detail has a StockId property, switch to: return detail.StockId;
-                var pi = detail.GetType().GetProperty("StockId");
-                if (pi == null) return null;
-                var raw = pi.GetValue(detail);
-                return raw as int? ?? (raw is int v ? v : (int?)null);
-            }
-        }
-        public static async Task<List<string>> ValidateCashAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
-        {
-            var errors = new List<string>();
-            if (orders == null)
-                return errors;
-
-            foreach (var order in orders)
-            {
-                // Parse enum safely
-                if (!Enum.IsDefined(typeof(OrderType), order.orderType))
-                    continue;
-
-                var type = (OrderType)order.orderType;
-                var basetype = (BaseOrderType)order.baseordertype;
-                // These order types require cash OUT validation (must have enough in account)
-                bool requiresOutflowCheck = type == OrderType.Purchase
-                                         || type == OrderType.ReturnSale
-                                         || type == OrderType.CreditPurchase
-                                         || basetype == BaseOrderType.orderpurhcase;
-
-                if (!requiresOutflowCheck)
-                    continue;
-
-                var account = await uow.CashAndBankss.GetById(order.CashAndBankId);
 
 
-                // For CreditPurchase: use creditpayed (actual payment now). For others: use TotalPrice.
-                decimal amountToCheck =
-                    type == OrderType.CreditPurchase
-                    ? (decimal)order.CreditPayment
-                    : order.TotalPrice;
+        //// ========= STOCK and CASH  VALIDATION =========
 
-                if (account.CurrentBalance < amountToCheck)
-                {
-                    errors.Add($"Not enough balance in {account.Name}. Needed: {amountToCheck}, available: {account.CurrentBalance}.");
-                    return errors;
-                }
-            }
+        //public static async Task<List<string>> ValidateStockAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
+        //{
+        //    var errors = new List<string>();
+        //    if (orders == null)
+        //        return errors;
 
-            return errors;
-        }
+        //    foreach (var order in orders)
+        //    {
+
+        //        var lines = order?.Ordermedetails;
+        //        if (lines == null || lines.Count == 0)
+        //            continue;
+
+        //        // Order type → sign
+        //        //isSalesOrSalesCredit || isPurchaseOrPurchsaceCredit
+        //        int ot = Convert.ToInt32((int)order.orderType);
+        //        bool isSales = (ot == 0 || ot == 2);
+        //        bool isPurchase = (ot == 1 || ot == 5);
+        //        bool isSalesReturn = (ot == 3);
+        //        bool isPurchaseReturn = (ot == 4);
+
+        //        int sign = (isSales || isPurchaseReturn) ? -1 : +1;
+
+        //        foreach (var d in lines)
+        //        {
+        //            // prefer per-line StockId if your model supports it; fallback to order.StockId
+        //            int stockId = TryGetDetailStockId(d) ?? order.StockId;
+
+        //            if (d.ProductId <= 0 || stockId <= 0)
+        //                continue;
+
+        //            var last = (await uow.StockActionDetailss
+        //                .Find(x => x.ProductId == d.ProductId && x.StockId == stockId))
+        //                .OrderByDescending(x => x.Id)
+        //                .FirstOrDefault();
+
+        //            int prevFinal = last?.FinalValue ?? 0;
+
+        //            // if we're removing from stock, ensure enough exists
+        //            if (sign < 0 && prevFinal < d.qty)
+        //            {
+        //                errors.Add($"Cannot remove {d.qty} of ProductId {d.ProductId} from Stock {stockId}. Available: {prevFinal}. Order #{order.internalId}.");
+        //            }
+        //        }
+        //    }
+
+        //    return errors;
+
+        //    // local helper to read a nullable int property named "StockId" on the detail, if it exists
+        //    static int? TryGetDetailStockId(Ordermedetail detail)
+        //    {
+        //        // if your detail has a StockId property, switch to: return detail.StockId;
+        //        var pi = detail.GetType().GetProperty("StockId");
+        //        if (pi == null) return null;
+        //        var raw = pi.GetValue(detail);
+        //        return raw as int? ?? (raw is int v ? v : (int?)null);
+        //    }
+        //}
+        //public static async Task<List<string>> ValidateCashAsync(IUnitOfWork uow, IEnumerable<Orderme> orders)
+        //{
+        //    var errors = new List<string>();
+        //    if (orders == null)
+        //        return errors;
+
+        //    foreach (var order in orders)
+        //    {
+        //        // Parse enum safely
+        //        if (!Enum.IsDefined(typeof(OrderType), order.orderType))
+        //            continue;
+
+        //        var type = (OrderType)order.orderType;
+        //        var basetype = (BaseOrderType)order.baseordertype;
+        //        // These order types require cash OUT validation (must have enough in account)
+        //        bool requiresOutflowCheck = type == OrderType.Purchase
+        //                                 || type == OrderType.ReturnSale
+        //                                 || type == OrderType.CreditPurchase
+        //                                 || basetype == BaseOrderType.orderpurhcase;
+
+        //        if (!requiresOutflowCheck)
+        //            continue;
+
+        //        var account = await uow.CashAndBankss.GetById(order.CashAndBankId);
+
+
+        //        // For CreditPurchase: use creditpayed (actual payment now). For others: use TotalPrice.
+        //        decimal amountToCheck =
+        //            type == OrderType.CreditPurchase
+        //            ? (decimal)order.CreditPayment
+        //            : order.TotalPrice;
+
+        //        if (account.CurrentBalance < amountToCheck)
+        //        {
+        //            errors.Add($"Not enough balance in {account.Name}. Needed: {amountToCheck}, available: {account.CurrentBalance}.");
+        //            return errors;
+        //        }
+        //    }
+
+        //    return errors;
+        //}
 
         //========= Finished Validation ================
 
@@ -262,30 +262,7 @@ namespace MyErp.Core.Validation
         {
             return Enum.TryParse(typeof(T), enumValue, true, out _);
         }
-        public static InvoiceType ParseInvoiceTypeStatus(string type)
-        {
-            return Enum.TryParse<InvoiceType>(type, true, out var parsedStatus) ? parsedStatus : InvoiceType.Invoice;
-        }
-        public static OrderType ParseOrderTypeStatus(string type)
-        {
-            return Enum.TryParse<OrderType>(type, true, out var parsedStatus) ? parsedStatus : OrderType.Sale;
-        }
-        public static CustomerType ParseCustomerType(string type)
-        {
-            return Enum.TryParse<CustomerType>(type, true, out var parsedStatus) ? parsedStatus : CustomerType.Person;
-        }
-        public static InventoryPermissionType ParseInventoryPermissionType(string type)
-        {
-            return Enum.TryParse<InventoryPermissionType>(type, true, out var parsedStatus) ? parsedStatus : InventoryPermissionType.ProductWithdrawal;
-        }
-        public static EntityType ParseEntityType(string type)
-        {
-            return Enum.TryParse<EntityType>(type, true, out var parsedStatus) ? parsedStatus : EntityType.Customer;
-        }
-        public static ControlTypes ParseControlType(string type)
-        {
-            return Enum.TryParse<ControlTypes>(type, true, out var parsedStatus) ? parsedStatus : ControlTypes.Form;
-        }
+   
         public static decimal ParseDecimal(string value)
         {
             return decimal.TryParse(value, out var result) ? result : 0m; // Default to 0 if parsing fails
@@ -297,17 +274,17 @@ namespace MyErp.Core.Validation
 
         ////////
         //KSA
-        public static bool CheckCustomerSchemaID(string custSchemaID)
-        {
-            if (Enum.TryParse<SchemeID>(custSchemaID, true, out _))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
+        //public static bool CheckCustomerSchemaID(string custSchemaID)
+        //{
+        //    if (Enum.TryParse<SchemeID>(custSchemaID, true, out _))
+        //    {
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        return false;
+        //    }
+        //}
 
         public static bool CheckCustomerSchemaValue(string custSchemaID, string custSchemaValue)
         {
@@ -344,17 +321,17 @@ namespace MyErp.Core.Validation
         }
 
 
-        public static bool CheckVATCategoryCode(string vatCategoryCode)
-        {
-            if (Enum.TryParse<VatCategoryCode>(vatCategoryCode, true, out _))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
+        //public static bool CheckVATCategoryCode(string vatCategoryCode)
+        //{
+        //    if (Enum.TryParse<VatCategoryCode>(vatCategoryCode, true, out _))
+        //    {
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        return false;
+        //    }
+        //}
         //END of public usage validation methods-----//
 
     }

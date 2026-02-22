@@ -6,6 +6,7 @@ using System.Text;
 using Logger;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using Microsoft.Data.SqlClient;
 namespace MyErp.Core.Global
 {
     public class ADO
@@ -93,7 +94,7 @@ namespace MyErp.Core.Global
 
             public async static Task<List<T>> GetExecuteQueryMySql<T>(string qry )
             {
-                using (var connection = new MySqlConnection(MyErp.Core.Global.CustomerConfiguration.ConnectionString))
+                using (var connection = new SqlConnection(MyErp.Core.Global.CustomerConfiguration.ConnectionString))
                 {
                     try
                     {

@@ -35,7 +35,7 @@ namespace MyErp.Core.Global
 
         public string PosClientSecret { get; set; }
 
-        public EnvironmentPortal EnvironmentPortal { get; set; }
+       // public EnvironmentPortal EnvironmentPortal { get; set; }
 
         public string DataBaseType { get; set; }
 

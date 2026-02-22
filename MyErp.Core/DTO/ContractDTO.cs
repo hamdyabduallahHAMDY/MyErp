@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MyErp.Core.DTO
+{
+    public class ContractDTO
+    {
+
+        public string regestrationNumber { get; set; }
+        public string CompanyName { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+
+    }
+}

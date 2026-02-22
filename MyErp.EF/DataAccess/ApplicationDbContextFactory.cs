@@ -24,7 +24,7 @@ namespace MyErp.EF.DataAccess
                 .Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-            optionsBuilder.UseMySQL(config.GetConnectionString("DefaultConnection"));
+            optionsBuilder.UseSqlServer(config.GetConnectionString("DefaultConnection"));
 
             return new ApplicationDbContext(optionsBuilder.Options);
         }

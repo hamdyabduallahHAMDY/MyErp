@@ -25,29 +25,11 @@ public class ApplicationDbContext : DbContext
         }
     }
     #region
-    public DbSet<Area> Areas { get; set; }
-    public DbSet<Branch> Branches { get; set; }
-    public DbSet<CashAndBanks> CashAndBanks { get; set; }
-    public DbSet<CashFlow> CashFlows { get; set; }
-    public DbSet<Category> Categories { get; set; }
-    public DbSet<Currency> Currencies { get; set; }
-    public DbSet<Customer> Customers { get; set; }
-    public DbSet<Employee> Employees { get; set; }
-    //public DbSet<ENUMS> ENUMS { get; set; }
-    public DbSet<Orderme> Ordermes { get; set; }
-    public DbSet<Ordermedetail> Ordermedetails { get; set; }
-    public DbSet<Product> Products { get; set; }
-    public DbSet<ProductType> ProductTypes { get; set; }
-    public DbSet<SalesMan> SalesMen { get; set; }
-    public DbSet<Stock> Stocks { get; set; }
-    public DbSet<StockActionDetails> StockActionDetails { get; set; }
-    public DbSet<StockActions> StockActions { get; set; }
-    public DbSet<StockActiontransfer> StockActiontransfers { get; set; }
-    public DbSet<StockReq> StockReqs { get; set; }
-    public DbSet<StockReqDetail> StockReqDetails { get; set; }
-    public DbSet<StockTaking> StockTakings { get; set; }
-    public DbSet<Treasury> Treasuries { get; set; }
+ 
+    public DbSet<Ticket> Tickets { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Contract> Contracts { get; set; }
+    public DbSet<UserSession> UserSessions { get; set; }
     #endregion
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
