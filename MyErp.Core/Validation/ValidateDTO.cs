@@ -2,11 +2,37 @@
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Models;
+using System.Reflection.Metadata.Ecma335;
 namespace MyErp.Core.Validation
 {
     public static class ValidateDTO
     {
-    
+        public async static Task<MainResponse<CustomerDTO>> CustomerDTO(List<CustomerDTO> insertDTO, bool isupdate = false)
+        {
+            MainResponse<CustomerDTO> response = new MainResponse<CustomerDTO>();
+            Errors<CustomerDTO> err = new Errors<CustomerDTO>();
+            bool hasError = false;
+            foreach (var customer in insertDTO)
+            {
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where Name = '{customer.Name}'");
+                if (DBcustomer.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+
+                if (hasError)
+                {
+                    continue;
+                }
+                response.acceptedObjects.Add(customer);
+            }
+            return response;
+        }
+
+
         public async static Task<MainResponse<UserDTO>> UserDTO(List<UserDTO> insertDTO, bool isupdate = false)
         {
             MainResponse<UserDTO> response = new MainResponse<UserDTO>();
