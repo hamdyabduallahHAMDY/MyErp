@@ -30,6 +30,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Contract> Contracts { get; set; }
     public DbSet<UserSession> UserSessions { get; set; }
+    public DbSet<Customer> Customers { get; set; }
     #endregion
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
