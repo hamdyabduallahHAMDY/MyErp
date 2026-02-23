@@ -18,6 +18,7 @@ namespace MyErp.Core.Interfaces
         ICmd<Ticket> Tickets { get; }
         ICmd<Contract> Contracts { get; }
         ICmd<UserSession> UserSessions { get; }
+        ICmd<Customer> Customers { get; }
         Task<int> Complete();
 
     }

@@ -24,6 +24,7 @@ namespace MyErp.EF.Repositories
         public ICmd<Ticket> Tickets { get; private set; }   
         public ICmd<Contract> Contracts { get; private set; }
         public ICmd<UserSession> UserSessions { get; private set; } 
+        public ICmd<Customer> Customers { get; private set; } 
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
@@ -33,7 +34,10 @@ namespace MyErp.EF.Repositories
             Tickets = new Cmd<Ticket>(_context);
 
             Contracts = new Cmd<Contract>(_context);
+
             UserSessions = new Cmd<UserSession>(_context);
+
+            Customers = new Cmd<Customer>(_context);
 
         }
         public async Task<int> Complete()
