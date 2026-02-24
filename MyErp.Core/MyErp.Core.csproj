@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <Reference Include="Logger">
-      <HintPath>..\..\..\Documents\Received Files\Logger.dll</HintPath>
+      <HintPath>..\..\REF\Logger.dll</HintPath>
     </Reference>
   </ItemGroup>
 
