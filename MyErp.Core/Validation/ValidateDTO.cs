@@ -32,6 +32,28 @@ namespace MyErp.Core.Validation
             return response;
         }
 
+        public async static Task<MainResponse<DocumentDTO>> DocumentDTO(DocumentDTO doc, bool isupdate = false)
+        {
+            MainResponse<DocumentDTO> response = new MainResponse<DocumentDTO>();
+            Errors<DocumentDTO> err = new Errors<DocumentDTO>();
+            bool hasError = false;
+            {
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Document>($"select * from Documents where Name = '{doc.Name}'");
+                if (DBcustomer.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
+                    response.rejectedObjects.Add(doc);
+                    hasError = true;
+                }
+                if (hasError)
+                {
+                    return response;
+                }
+                response.acceptedObjects.Add(doc);
+            }
+            return response;
+        }
+
 
         public async static Task<MainResponse<UserDTO>> UserDTO(List<UserDTO> insertDTO, bool isupdate = false)
         {
