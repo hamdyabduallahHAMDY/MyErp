@@ -1,0 +1,275 @@
+2026-01-26 9:46:13 AM|Info| IN Login, Create DBContext 
+2026-01-26 9:48:55 AM|Info| 306151650
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,Collect All Jobs 
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,There are Jobs will be executed ....
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Receipt Job And Its Time =23:00
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,Import Products Job Name => Import Products And Its Time =07:00
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,SyncProducts Job  Name => Send Products And Its Time =08:00
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:10
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:40
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Return Job And Its Time =23:30
+2026-01-26 9:48:56 AM|Info| In MainErpAutoSend ,Refresh Receipt Job Name => Sync Job And Its Time =23:50
+2026-01-26 9:48:56 AM|Info| Number Of Jobs Will Be Executed => 7
+2026-01-26 9:48:56 AM|Info| In Auto Send Excel,
+2026-01-26 9:48:56 AM|Info| Server started on port 0...
+2026-01-26 9:49:16 AM|Info| In Load Data Integration Manueal Pull , 
+2026-01-26 9:49:16 AM|Info| In Load Data Integration Manueal Pull ,Enter Load To get all Jobs
+2026-01-26 9:49:16 AM|Info| In Load Data Integration ,Enter Load To get all Jobs
+2026-01-26 9:49:16 AM|Info| In Load Data Integration ,No. of jobs will be execute is 2
+2026-01-26 9:49:16 AM|Info| In Load Data Integration ,Create DB with DataBaseType= SqlServer
+2026-01-26 9:49:16 AM|Info| Start opening connection with database...
+2026-01-26 9:49:16 AM|Info| The connection opened successfully
+2026-01-26 9:49:16 AM|Info| Start formatting the query to the last format
+2026-01-26 9:49:16 AM|Info| The query formatted successfully
+2026-01-26 9:49:16 AM|Info| Start getting The data from DB...
+2026-01-26 9:49:54 AM|Info| Successfully get the data from DB
+2026-01-26 9:49:54 AM|Info| In GetInvoices SQL Server Integration ,Get List lstInvoiceSanded and data table length is = 32792
+2026-01-26 9:49:54 AM|Info| Start validating and converting data to Flexe format...
+2026-01-26 9:49:54 AM|Info| In ConvertDataTable , job found for type SqlServer with id 5
+2026-01-26 9:49:54 AM|Info| [Task 0] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 5] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 6] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 1] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 8] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 7] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 9] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 4] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| in ConvertTable Before Task Complete
+2026-01-26 9:49:54 AM|Info| [Task 2] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 10] Acquired semaphore
+2026-01-26 9:49:54 AM|Info| [Task 3] Acquired semaphore
+2026-01-26 9:49:55 AM|Info| [Task 11] Acquired semaphore
+2026-01-26 9:50:29 AM|Info| [Task 1] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 7] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 9] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 8] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 10] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 6] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 5] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 0] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 3] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 4] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 2] Released semaphore
+2026-01-26 9:50:29 AM|Info| [Task 11] Released semaphore
+2026-01-26 9:50:29 AM|Info| in ConvertTable After Task Complete
+2026-01-26 9:50:29 AM|Info| Finish validating and converting data to Flexe format...
+2026-01-26 9:50:29 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 9:50:29 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 9:50:29 AM|Info| Start Checking if invs exist...
+2026-01-26 9:50:29 AM|Info| Finish Checking if invs exist...
+2026-01-26 9:50:29 AM|Info| In Load Data Integration ,Get all invoice from job= Import Receipt Job
+2026-01-26 9:50:29 AM|Info| ##In Checking If Inv Exist
+2026-01-26 9:50:30 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 9:50:30 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 9:50:30 AM|Info| Start Checking if invs exist...
+2026-01-26 9:50:30 AM|Info| Finish Checking if invs exist...
+2026-01-26 9:50:30 AM|Info| ##End Checking If Inv Exist
+2026-01-26 9:50:30 AM|Info| Start Grouping Unique and Existing Lists
+2026-01-26 9:50:30 AM|Info| End Grouping Unique and Existing Lists count 226 
+2026-01-26 9:50:30 AM|Info| Start adding Unique List to distinct Elements
+2026-01-26 9:50:30 AM|Info| End adding Unique List to Distinct Elements
+2026-01-26 9:50:30 AM|Info| Start adding Exist List to Common Elements
+2026-01-26 9:50:30 AM|Info| End adding Exist List to Common Elements
+2026-01-26 9:50:30 AM|Info| In Importing Data To Check Box Grid
+2026-01-26 9:50:30 AM|Info| End Importing Data To Check Box Grid
+2026-01-26 9:50:30 AM|Info| In Load Data Integration ,update two list of distinct and common 
+2026-01-26 9:50:30 AM|Info| In Load Data Integration ,Create DB with DataBaseType= SqlServer
+2026-01-26 9:50:30 AM|Info| Start opening connection with database...
+2026-01-26 9:50:30 AM|Info| The connection opened successfully
+2026-01-26 9:50:30 AM|Info| Start formatting the query to the last format
+2026-01-26 9:50:30 AM|Info| The query formatted successfully
+2026-01-26 9:50:30 AM|Info| Start getting The data from DB...
+2026-01-26 9:50:58 AM|Info| Successfully get the data from DB
+2026-01-26 9:50:58 AM|Info| In GetInvoices SQL Server Integration ,Get List lstInvoiceSanded and data table length is = 2748
+2026-01-26 9:50:58 AM|Info| Start validating and converting data to Flexe format...
+2026-01-26 9:50:58 AM|Info| In ConvertDataTable , job found for type SqlServer with id 10
+2026-01-26 9:50:58 AM|Info| [Task 0] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 9] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 11] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 3] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| in ConvertTable Before Task Complete
+2026-01-26 9:50:58 AM|Info| [Task 10] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 4] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 1] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 7] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 8] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 2] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 5] Acquired semaphore
+2026-01-26 9:50:58 AM|Info| [Task 6] Acquired semaphore
+2026-01-26 9:51:01 AM|Info| [Task 1] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 2] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 0] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 5] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 11] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 9] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 10] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 7] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 8] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 3] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 4] Released semaphore
+2026-01-26 9:51:01 AM|Info| [Task 6] Released semaphore
+2026-01-26 9:51:01 AM|Info| in ConvertTable After Task Complete
+2026-01-26 9:51:01 AM|Info| Finish validating and converting data to Flexe format...
+2026-01-26 9:51:01 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 9:51:01 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 9:51:01 AM|Info| Start Checking if invs exist...
+2026-01-26 9:51:01 AM|Info| Finish Checking if invs exist...
+2026-01-26 9:51:01 AM|Info| In Load Data Integration ,Get all invoice from job= Import Return Job
+2026-01-26 9:51:01 AM|Info| ##In Checking If Inv Exist
+2026-01-26 9:51:01 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 9:51:01 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 9:51:01 AM|Info| Start Checking if invs exist...
+2026-01-26 9:51:01 AM|Info| Finish Checking if invs exist...
+2026-01-26 9:51:01 AM|Info| ##End Checking If Inv Exist
+2026-01-26 9:51:01 AM|Info| Start Grouping Unique and Existing Lists
+2026-01-26 9:51:01 AM|Info| End Grouping Unique and Existing Lists count 248 
+2026-01-26 9:51:01 AM|Info| Start adding Unique List to distinct Elements
+2026-01-26 9:51:01 AM|Info| End adding Unique List to Distinct Elements
+2026-01-26 9:51:01 AM|Info| Start adding Exist List to Common Elements
+2026-01-26 9:51:01 AM|Info| End adding Exist List to Common Elements
+2026-01-26 9:51:01 AM|Info| In Importing Data To Check Box Grid
+2026-01-26 9:51:01 AM|Info| End Importing Data To Check Box Grid
+2026-01-26 9:51:01 AM|Info| In Load Data Integration ,update two list of distinct and common 
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull  , Select Checked Items 
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , the Selected Checked Items count =  248
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Converting items To InvoiceExternal and Rows = 578
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull, receipts captured by validations count is 0
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Getting Uniqe items Count orders = 248
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Getting Customers List customers_lst = 80
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Getting Products List products_lst = 543
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Looping on Customers List to check on it 
+2026-01-26 9:55:02 AM|Info| In Send From ERP Manueal Pull , After Looping on Products List to check on it 
+2026-01-26 9:55:03 AM|Info| In Send From ERP Manueal Pull , After Saving Loop on Customers List  
+2026-01-26 9:55:04 AM|Info| In Send From ERP Manueal Pull , After Saving Loop on Products List  
+2026-01-26 9:55:27 AM|Info| In Send From ERP Manueal Pull , Saving in Orders Table  ======  
+2026-01-26 9:55:28 AM|Info| In SaveToOrdersImportLog ,The Type Of Data You Want To log is =>Error
+2026-01-26 9:55:28 AM|Info| In SaveToOrdersImportLog ,lstOrders Count =>248
+2026-01-26 9:55:28 AM|Info| In SaveToOrdersImportLog ,lstOrdersErrors Count =>0
+2026-01-26 9:55:28 AM|Info| In SaveToOrdersImportLog ,Before Batch
+2026-01-26 9:55:29 AM|Info| In SaveToOrdersImportLog , After Batch 0-1
+2026-01-26 9:55:29 AM|Info| In SaveToOrdersImportLog ,Added In DB List Of Logs it's Count =>0
+2026-01-26 9:55:29 AM|Info| The type of data to be logged: Error
+2026-01-26 9:55:29 AM|Info| Obtained import batch: 0-1
+2026-01-26 9:55:29 AM|Info| Converting error list to order import log...
+2026-01-26 9:55:29 AM|Info| Number of order import logs to be added to the database: 0
+2026-01-26 9:55:29 AM|Info| Deleting existing order import logs with duplicate invoice IDs...
+2026-01-26 9:55:29 AM|Info| Deletion of existing order import logs complete.
+2026-01-26 9:55:29 AM|Info| Added 0 order import logs to the database.
+2026-01-26 11:30:39 AM|Info| In Load Data Integration Manueal Pull , 
+2026-01-26 11:30:39 AM|Info| In Load Data Integration Manueal Pull ,Enter Load To get all Jobs
+2026-01-26 11:30:39 AM|Info| In Load Data Integration ,Enter Load To get all Jobs
+2026-01-26 11:30:39 AM|Info| In Load Data Integration ,No. of jobs will be execute is 2
+2026-01-26 11:30:39 AM|Info| In Load Data Integration ,Create DB with DataBaseType= SqlServer
+2026-01-26 11:30:39 AM|Info| Start opening connection with database...
+2026-01-26 11:30:39 AM|Info| The connection opened successfully
+2026-01-26 11:30:39 AM|Info| Start formatting the query to the last format
+2026-01-26 11:30:39 AM|Info| The query formatted successfully
+2026-01-26 11:30:39 AM|Info| Start getting The data from DB...
+2026-01-26 11:31:14 AM|Info| Successfully get the data from DB
+2026-01-26 11:31:14 AM|Info| In GetInvoices SQL Server Integration ,Get List lstInvoiceSanded and data table length is = 32791
+2026-01-26 11:31:14 AM|Info| Start validating and converting data to Flexe format...
+2026-01-26 11:31:14 AM|Info| In ConvertDataTable , job found for type SqlServer with id 5
+2026-01-26 11:31:14 AM|Info| [Task 0] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 2] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 1] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 3] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 4] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 5] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 6] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 7] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 8] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| in ConvertTable Before Task Complete
+2026-01-26 11:31:14 AM|Info| [Task 10] Acquired semaphore
+2026-01-26 11:31:14 AM|Info| [Task 9] Acquired semaphore
+2026-01-26 11:31:17 AM|Info| [Task 11] Acquired semaphore
+2026-01-26 11:31:48 AM|Info| [Task 4] Released semaphore
+2026-01-26 11:31:48 AM|Info| [Task 5] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 9] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 0] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 6] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 7] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 1] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 3] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 2] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 8] Released semaphore
+2026-01-26 11:31:49 AM|Info| [Task 10] Released semaphore
+2026-01-26 11:31:50 AM|Info| [Task 11] Released semaphore
+2026-01-26 11:31:50 AM|Info| in ConvertTable After Task Complete
+2026-01-26 11:31:50 AM|Info| Finish validating and converting data to Flexe format...
+2026-01-26 11:31:50 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 11:31:50 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 11:31:50 AM|Info| Start Checking if invs exist...
+2026-01-26 11:31:50 AM|Info| Finish Checking if invs exist...
+2026-01-26 11:31:50 AM|Info| In Load Data Integration ,Get all invoice from job= Import Receipt Job
+2026-01-26 11:31:50 AM|Info| ##In Checking If Inv Exist
+2026-01-26 11:31:50 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 11:31:50 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 11:31:50 AM|Info| Start Checking if invs exist...
+2026-01-26 11:31:50 AM|Info| Finish Checking if invs exist...
+2026-01-26 11:31:50 AM|Info| ##End Checking If Inv Exist
+2026-01-26 11:31:50 AM|Info| Start Grouping Unique and Existing Lists
+2026-01-26 11:31:50 AM|Info| End Grouping Unique and Existing Lists count 5 
+2026-01-26 11:31:50 AM|Info| Start adding Unique List to distinct Elements
+2026-01-26 11:31:50 AM|Info| End adding Unique List to Distinct Elements
+2026-01-26 11:31:50 AM|Info| Start adding Exist List to Common Elements
+2026-01-26 11:31:50 AM|Info| End adding Exist List to Common Elements
+2026-01-26 11:31:50 AM|Info| In Importing Data To Check Box Grid
+2026-01-26 11:31:50 AM|Info| End Importing Data To Check Box Grid
+2026-01-26 11:31:50 AM|Info| In Load Data Integration ,update two list of distinct and common 
+2026-01-26 11:31:50 AM|Info| In Load Data Integration ,Create DB with DataBaseType= SqlServer
+2026-01-26 11:31:50 AM|Info| Start opening connection with database...
+2026-01-26 11:31:50 AM|Info| The connection opened successfully
+2026-01-26 11:31:50 AM|Info| Start formatting the query to the last format
+2026-01-26 11:31:50 AM|Info| The query formatted successfully
+2026-01-26 11:31:50 AM|Info| Start getting The data from DB...
+2026-01-26 11:32:19 AM|Info| Successfully get the data from DB
+2026-01-26 11:32:19 AM|Info| In GetInvoices SQL Server Integration ,Get List lstInvoiceSanded and data table length is = 2751
+2026-01-26 11:32:19 AM|Info| Start validating and converting data to Flexe format...
+2026-01-26 11:32:19 AM|Info| In ConvertDataTable , job found for type SqlServer with id 10
+2026-01-26 11:32:19 AM|Info| [Task 0] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 5] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 7] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 10] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 8] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 3] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| in ConvertTable Before Task Complete
+2026-01-26 11:32:19 AM|Info| [Task 6] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 1] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 9] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 2] Acquired semaphore
+2026-01-26 11:32:19 AM|Info| [Task 4] Acquired semaphore
+2026-01-26 11:32:20 AM|Info| [Task 11] Acquired semaphore
+2026-01-26 11:32:22 AM|Info| [Task 3] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 5] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 8] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 2] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 4] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 6] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 1] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 7] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 0] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 9] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 10] Released semaphore
+2026-01-26 11:32:22 AM|Info| [Task 11] Released semaphore
+2026-01-26 11:32:22 AM|Info| in ConvertTable After Task Complete
+2026-01-26 11:32:22 AM|Info| Finish validating and converting data to Flexe format...
+2026-01-26 11:32:22 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 11:32:22 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 11:32:22 AM|Info| Start Checking if invs exist...
+2026-01-26 11:32:22 AM|Info| Finish Checking if invs exist...
+2026-01-26 11:32:22 AM|Info| In Load Data Integration ,Get all invoice from job= Import Return Job
+2026-01-26 11:32:22 AM|Info| ##In Checking If Inv Exist
+2026-01-26 11:32:22 AM|Info| Start converting existingInvoices to hashSet...
+2026-01-26 11:32:22 AM|Info| Finish converting existingInvoices to hashSet...
+2026-01-26 11:32:22 AM|Info| Start Checking if invs exist...
+2026-01-26 11:32:22 AM|Info| Finish Checking if invs exist...
+2026-01-26 11:32:22 AM|Info| ##End Checking If Inv Exist
+2026-01-26 11:32:22 AM|Info| Start Grouping Unique and Existing Lists
+2026-01-26 11:32:22 AM|Info| End Grouping Unique and Existing Lists count 7 
+2026-01-26 11:32:22 AM|Info| Start adding Unique List to distinct Elements
+2026-01-26 11:32:22 AM|Info| End adding Unique List to Distinct Elements
+2026-01-26 11:32:22 AM|Info| Start adding Exist List to Common Elements
+2026-01-26 11:32:22 AM|Info| End adding Exist List to Common Elements
+2026-01-26 11:32:22 AM|Info| In Importing Data To Check Box Grid
+2026-01-26 11:32:22 AM|Info| End Importing Data To Check Box Grid
+2026-01-26 11:32:22 AM|Info| In Load Data Integration ,update two list of distinct and common 

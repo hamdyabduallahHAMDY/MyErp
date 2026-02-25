@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MyErp.Core.DTO
 {
-    public   class DocumentDTO
+    public class DocumentDTO
     {
         public string Name { get; set; }
         public IFormFile Attachment { get; set; }

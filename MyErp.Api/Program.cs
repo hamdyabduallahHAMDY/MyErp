@@ -20,7 +20,6 @@ builder.Services.AddCors(options =>
 });
 
 
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddAutoMapper(typeof(Mapping));
@@ -34,6 +33,7 @@ MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
 //});
 var app = builder.Build();
 app.UseCors();
+app.UseStaticFiles();
 
 using (var scope = app.Services.CreateScope())
 {

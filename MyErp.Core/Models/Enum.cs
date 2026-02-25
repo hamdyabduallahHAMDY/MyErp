@@ -11,8 +11,13 @@ namespace MyErp.Core.Models
         {
             login = 0,
             logout = 1,
-
         }
-    
-      
+        public enum Status
+        {
+            Open = 0,
+            InProgress = 1,
+            Closed = 2
+        }
+
+
 }

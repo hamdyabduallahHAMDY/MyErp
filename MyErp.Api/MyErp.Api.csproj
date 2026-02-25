@@ -25,11 +25,16 @@
 
   <ItemGroup>
     <Reference Include="License.Core">
-      <HintPath>..\..\..\Documents\Received Files\New folder (2)\License.Core.dll</HintPath>
+      <HintPath>..\..\..\..\Documents\Received Files\License.Core.dll</HintPath>
     </Reference>
     <Reference Include="Logger">
       <HintPath>..\..\REF\Logger.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Upload_Ticket\" />
+    <Folder Include="Upload_Document\" />
   </ItemGroup>
 
 </Project>
