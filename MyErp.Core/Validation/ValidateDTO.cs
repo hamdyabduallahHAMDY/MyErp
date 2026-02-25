@@ -127,25 +127,23 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-        public async static Task<MainResponse<TicketDTO>> TicketDTO(List<TicketDTO> insertDTO, bool isupdate = false)
+        public async static Task<MainResponse<TicketDTO>> TicketDTO(TicketDTO user, bool isupdate = false)
         {
             MainResponse<TicketDTO> response = new MainResponse<TicketDTO>();
             Errors<TicketDTO> err = new Errors<TicketDTO>();
             bool hasError = false;
-            foreach (var user in insertDTO)
-            {
+            { 
                 var DBuser = await ADO.GetExecuteQueryMySql<Models.Ticket>($"select * from Tickets  where Description = '{user.Description}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
                     response.errors.Add(err.ObjectErrorInvExist(user.TaxRegistrationId.ToString()));
                     response.rejectedObjects.Add(user);
                     hasError = true;
-                    continue;
                 }
-
                 if (hasError)
                 {
-                    continue;
+                    response.errors.Add(err.ObjectErrorInvExist(user.Description));
+                    return response;
                 }
                 response.acceptedObjects.Add(user);
             }

@@ -42,9 +42,11 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
         [HttpPut("updateById")]
-        public async Task<IActionResult> PutUser(int id, [FromForm] List<TicketDTO> userupdated)
+        public async Task<IActionResult> PutUser(int id, [FromForm] TicketDTO userupdated )
         {
-            var result = await UserServices.updateTicket(id, userupdated);
+            var apiRootPath = Directory.GetCurrentDirectory();
+
+            var result = await UserServices.updateTicket(id, userupdated , apiRootPath);
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPut");
             return resultWithStatusCode;
         }
@@ -52,7 +54,8 @@ namespace MyErp.Api.Controllers
         [RequestSizeLimit(1000000000)]
         public async Task<IActionResult> AddUser([FromForm] TicketDTO dto)
         {
-            var result = await UserServices.addTicket(dto);
+            var apiRootPath = Directory.GetCurrentDirectory();
+            var result = await UserServices.addTicket(dto,apiRootPath);
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }
@@ -65,6 +68,19 @@ namespace MyErp.Api.Controllers
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
+        }
+
+
+        [HttpGet("download/{fileName}")]
+        public IActionResult Download(string fileName)
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Upload_Ticket", fileName);
+
+            if (!System.IO.File.Exists(path))
+                return NotFound();
+
+            var bytes = System.IO.File.ReadAllBytes(path);
+            return File(bytes, "application/octet-stream", fileName);
         }
     }
 }

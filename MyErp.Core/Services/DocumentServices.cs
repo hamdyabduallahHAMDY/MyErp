@@ -54,9 +54,7 @@ public class DocumentServices
         return response;
     }
 
-    // =========================
     // Add Document
-    // =========================
     public async Task<MainResponse<Document>> addDocument(
       DocumentDTO dto,
       string apiRootPath)
@@ -65,6 +63,8 @@ public class DocumentServices
 
         try
         {
+
+
             response.acceptedObjects = new List<Document>();
 
             string savedFilePath = null;
@@ -72,15 +72,14 @@ public class DocumentServices
             if (dto.Attachment != null && dto.Attachment.Length > 0)
             {
                 // Create Uploads folder inside API root
-                string uploadsFolder = Path.Combine(apiRootPath, "Uploads");
+                string uploadsFolder = Path.Combine(apiRootPath, "Upload_Document");
 
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
                 // Create unique filename
-                string uniqueFileName = Guid.NewGuid() + "_" + dto.Attachment.FileName;
 
-                string fullPath = Path.Combine(uploadsFolder, uniqueFileName);
+                string fullPath = Path.Combine(uploadsFolder ,  dto.Attachment.FileName    /*uniqueFileName*/);
 
                 // Save file physically
                 using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -89,13 +88,13 @@ public class DocumentServices
                 }
 
                 // Save relative path in DB
-                savedFilePath = Path.Combine("Uploads", uniqueFileName);
+                savedFilePath = Path.Combine("Upload_Document" /*uniqueFileName*/);
             }
 
             Document document = new Document
             {
                 Name = dto.Name,
-                Attachment = savedFilePath  
+                Attachment = dto.Attachment.FileName  
             };
 
             await _unitOfWork.Documents.Add(document);
@@ -118,9 +117,7 @@ public class DocumentServices
         }
     }
 
-    // =========================
     // Update Document
-    // =========================
     public async Task<MainResponse<Document>> updateDocument(int id, DocumentDTO documentUpdated)
     {
         var response = new MainResponse<Document>();
