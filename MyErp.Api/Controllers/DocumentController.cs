@@ -93,7 +93,7 @@ namespace MyErp.Api.Controllers
         [HttpGet("download/{fileName}")]
         public IActionResult Download(string fileName)
         {
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileName);
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Upload_Document", fileName);
 
             if (!System.IO.File.Exists(path))
                 return NotFound();

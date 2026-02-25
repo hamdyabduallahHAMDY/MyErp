@@ -33,7 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Uploads\" />
+    <Folder Include="Upload_Ticket\" />
+    <Folder Include="Upload_Document\" />
   </ItemGroup>
 
 </Project>

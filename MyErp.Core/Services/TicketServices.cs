@@ -51,7 +51,7 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Ticket> { user };
             return response;
         }
-        public async Task<MainResponse<Ticket>> updateTicket(int id, List<TicketDTO> userUpdated)
+        public async Task<MainResponse<Ticket>> updateTicket(int id, TicketDTO userUpdated, string apiRootPath)
         {
             var response = new MainResponse<Ticket>();
 
@@ -59,35 +59,61 @@ namespace MyErp.Core.Services
             {
                 var validList = await ValidateDTO.TicketDTO(userUpdated, true);
 
-                var existingUser = await _unitOfWork.Tickets.GetFirst(a => a.Id == id);
-                if (existingUser is null)
+                var existingTicket = await _unitOfWork.Tickets.GetFirst(a => a.Id == id);
+                if (existingTicket is null)
                 {
-                    response.errors.Add($"Cannot find User with ID {id}.");
+                    response.errors.Add($"Cannot find Ticket with ID {id}.");
+                    if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
+                        response.errors.AddRange(validList.errors);
+
                     if (validList.rejectedObjects?.Any() == true)
-                        if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
-                    response.rejectedObjects.AddRange(_mapper.Map<List<Ticket>>(validList.rejectedObjects));
+                        response.rejectedObjects.AddRange(_mapper.Map<List<Ticket>>(validList.rejectedObjects));
+
                     return response;
                 }
 
                 if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update User. Fix validation errors and try again.");
+                    response.errors.Add("No valid payload to update Ticket. Fix validation errors and try again.");
                     if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
+
                     if (validList.rejectedObjects?.Any() == true)
                         response.rejectedObjects.AddRange(_mapper.Map<List<Ticket>>(validList.rejectedObjects));
+
                     return response;
                 }
 
                 var dto = validList.acceptedObjects[0];
 
-                _mapper.Map(dto, existingUser);
+                _mapper.Map(dto, existingTicket);
 
-                await _unitOfWork.Tickets.Update(existingUser);
+                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
 
-                response.acceptedObjects.Add(existingUser);
+                    string originalName = Path.GetFileName(dto.Attachment.FileName);
+                    string fullPath = Path.Combine(uploadsFolder, originalName);
+
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await dto.Attachment.CopyToAsync(stream);
+                    }
+
+                    existingTicket.Attachment = dto.Attachment.FileName;
+
+                }
+
+
+                await _unitOfWork.Tickets.Update(existingTicket);
+
+                response.acceptedObjects ??= new List<Ticket>();
+                response.acceptedObjects.Add(existingTicket);
 
                 if (validList.rejectedObjects?.Any() == true)
                     response.rejectedObjects.AddRange(_mapper.Map<List<Ticket>>(validList.rejectedObjects));
+
                 if (validList.errors?.Any() == true)
                     response.errors.AddRange(validList.errors);
             }
@@ -101,45 +127,64 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Ticket>> addTicket(TicketDTO dto)
+        public async Task<MainResponse<Ticket>> addTicket(TicketDTO dto, string apiRootPath)
         {
             MainResponse<Ticket> response = new MainResponse<Ticket>();
-
             try
             {
+
+
                 response.acceptedObjects = new List<Ticket>();
 
+                string savedFilePath = null;
 
-                byte[] filebytes = null;
-
-                if (dto.attachment != null && dto.attachment.Length > 0)
+                if (dto.Attachment != null && dto.Attachment.Length > 0)
                 {
-                    using (var ms = new MemoryStream())
+                    // Create Uploads folder inside API root
+                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
+
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    // Create unique filename
+
+                    string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
+
+                    // Save file physically
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
                     {
-                        await dto.attachment.CopyToAsync(ms);
-                        filebytes = ms.ToArray();
+                        await dto.Attachment.CopyToAsync(stream);
                     }
+
+                    // Save relative path in DB
+                    savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
                 }
 
                 Ticket ticket = new Ticket
                 {
-                    Description = dto.Description,
                     TaxRegistrationId = dto.TaxRegistrationId,
-                    Attachment = filebytes,
-                    TaxRegistrationName = dto.TaxRegistrationName
-                };
+                    Attachment = dto.Attachment.FileName,
+                    TaxRegistrationName = dto.TaxRegistrationName,
+                    Description = dto.Description,
+                    Status = (Status)dto.Status
+                }; 
 
                 await _unitOfWork.Tickets.Add(ticket);
+                //await _unitOfWork.sav();
 
                 response.acceptedObjects.Add(ticket);
-
 
                 return response;
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
+
                 response.errors = new List<string> { ex.Message };
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+
                 return response;
             }
         }
