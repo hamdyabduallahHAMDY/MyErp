@@ -65,10 +65,12 @@ namespace MyErp.Api.Controllers
 
         // ADD
         [HttpPost("add")]
-        public async Task<IActionResult> AddDocument(
-            [FromForm] DocumentDTO documents)
+        public async Task<IActionResult> AddDocument([FromForm] DocumentDTO documents)
         {
-            var result = await DocumentServices.addDocument(documents);
+            // Get API root directory
+            var apiRootPath = Directory.GetCurrentDirectory();
+
+            var result = await DocumentServices.addDocument(documents, apiRootPath);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpPost");
@@ -86,6 +88,18 @@ namespace MyErp.Api.Controllers
                 ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
+        }
+
+        [HttpGet("download/{fileName}")]
+        public IActionResult Download(string fileName)
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileName);
+
+            if (!System.IO.File.Exists(path))
+                return NotFound();
+
+            var bytes = System.IO.File.ReadAllBytes(path);
+            return File(bytes, "application/octet-stream", fileName);
         }
     }
 }

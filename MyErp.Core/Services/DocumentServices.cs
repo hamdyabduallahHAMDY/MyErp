@@ -57,7 +57,9 @@ public class DocumentServices
     // =========================
     // Add Document
     // =========================
-    public async Task<MainResponse<Document>> addDocument(DocumentDTO dto)
+    public async Task<MainResponse<Document>> addDocument(
+      DocumentDTO dto,
+      string apiRootPath)
     {
         MainResponse<Document> response = new MainResponse<Document>();
 
@@ -65,26 +67,39 @@ public class DocumentServices
         {
             response.acceptedObjects = new List<Document>();
 
-            byte[] fileBytes = null;
+            string savedFilePath = null;
 
-            // Convert IFormFile → byte[]
             if (dto.Attachment != null && dto.Attachment.Length > 0)
             {
-                using (var ms = new MemoryStream())
+                // Create Uploads folder inside API root
+                string uploadsFolder = Path.Combine(apiRootPath, "Uploads");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                // Create unique filename
+                string uniqueFileName = Guid.NewGuid() + "_" + dto.Attachment.FileName;
+
+                string fullPath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                // Save file physically
+                using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
-                    await dto.Attachment.CopyToAsync(ms);
-                    fileBytes = ms.ToArray();
+                    await dto.Attachment.CopyToAsync(stream);
                 }
+
+                // Save relative path in DB
+                savedFilePath = Path.Combine("Uploads", uniqueFileName);
             }
 
-            // Manual mapping (recommended when handling files)
             Document document = new Document
             {
                 Name = dto.Name,
-                Attachment = fileBytes
+                Attachment = savedFilePath  
             };
 
             await _unitOfWork.Documents.Add(document);
+            //await _unitOfWork.sav();
 
             response.acceptedObjects.Add(document);
 
@@ -93,6 +108,7 @@ public class DocumentServices
         catch (Exception ex)
         {
             Logs.Log(ex.ToString());
+
             response.errors = new List<string> { ex.Message };
 
             if (ex.InnerException != null)

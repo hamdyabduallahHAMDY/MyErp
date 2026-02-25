@@ -1,0 +1,101 @@
+{
+  "header": {
+    "referenceUUID": "",
+    "dateTimeIssued": "2026-01-28T21:59:50Z",
+    "receiptNumber": "2607120056",
+    "uuid": "426a5c841c7aeeaacac2b75c45a18a9163759322f3c6d05be432ab5de85bed56",
+    "previousUUID": "6200cbe6093835def326785a181fcf7ad6225942d62bb7ba2ff0216743d17d0c",
+    "referenceOldUUID": "",
+    "currency": "EGP",
+    "exchangeRate": 0.0,
+    "sOrderNameCode": "",
+    "orderdeliveryMode": "",
+    "grossWeight": 0.0,
+    "netWeight": 0.0
+  },
+  "documentType": {
+    "receiptType": "R",
+    "typeVersion": "1.2"
+  },
+  "seller": {
+    "rin": "306151650",
+    "companyTradeName": "فاشون انترناشيونال جروب فيج",
+    "branchCode": "0",
+    "branchAddress": {
+      "country": "EG",
+      "governate": "القاهرة",
+      "regionCity": "المدينة",
+      "street": "0 الوحدة 1-162 الطابق الاول كايرو فيستيفال سيتي مول - التجمع ا , New Cairo 1 , Cairo , Egypt , 00000",
+      "buildingNumber": "0",
+      "postalCode": "0",
+      "floor": "0",
+      "room": "0",
+      "landmark": "0",
+      "additionalInformation": "E"
+    },
+    "deviceSerialNumber": "Fig-Cs-BagsFactory-12",
+    "syndicateLicenseNumber": "",
+    "activityCode": "4751"
+  },
+  "buyer": {
+    "type": "P",
+    "id": "",
+    "name": "CASH",
+    "mobileNumber": "",
+    "paymentNumber": ""
+  },
+  "itemData": [
+    {
+      "internalCode": "00475373BLACKXS",
+      "description": "SKIRT/SKIRT/SHORT/A LINE-00475373BLACKXS",
+      "itemType": "EGS",
+      "itemCode": "EG-306151650-SKIRT",
+      "unitType": "EA",
+      "quantity": 1.0,
+      "unitPrice": 1574.5614,
+      "netSale": 631.57894,
+      "totalSale": 1574.5614,
+      "total": 719.99999,
+      "commercialDiscountData": [
+        {
+          "amount": 942.98246,
+          "description": "خصم قبل الضريبة"
+        }
+      ],
+      "itemDiscountData": [],
+      "valueDifference": 0.0,
+      "taxableItems": [
+        {
+          "taxType": "T1",
+          "amount": 88.42105,
+          "subType": "V009",
+          "rate": 14.0
+        }
+      ]
+    }
+  ],
+  "totalSales": 1574.5614,
+  "totalCommercialDiscount": 942.98246,
+  "totalItemsDiscount": 0.0,
+  "extraReceiptDiscountData": [],
+  "netAmount": 631.57894,
+  "feesAmount": 0.0,
+  "totalAmount": 719.99999,
+  "taxTotals": [
+    {
+      "taxType": "T1",
+      "amount": 88.42105
+    }
+  ],
+  "paymentMethod": "C",
+  "adjustment": 0.0,
+  "contractor": {
+    "name": "",
+    "amount": 0.0,
+    "rate": 0.0
+  },
+  "beneficiary": {
+    "amount": 0.0,
+    "rate": 0.0
+  }
+}
