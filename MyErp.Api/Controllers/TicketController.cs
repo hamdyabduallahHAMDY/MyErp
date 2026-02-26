@@ -41,6 +41,13 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
+        [HttpGet("getByStatus")]
+        public async Task<IActionResult> GetUserByStatus(int status)
+        {
+            var result = await UserServices.getTicketByStatus(status);
+            var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
         [HttpPut("updateById")]
         public async Task<IActionResult> PutUser(int id, [FromForm] TicketDTO userupdated )
         {
