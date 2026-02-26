@@ -125,6 +125,13 @@ namespace MyErp.Core.Mapping
             CreateMap<Contract, ContractDTO>().ReverseMap();
             CreateMap<UserSession, UserSessionDTO>().ReverseMap();
             CreateMap<Customer, CustomerDTO>().ReverseMap();
+            CreateMap<FAQ, FAQDTO>().ReverseMap();          
+            CreateMap<ToDo, ToDoDTO>().ReverseMap();
+            CreateMap<ToDoDTO, ToDo>()
+    .ForMember(d => d.ischecked, o => o.MapFrom(s => (IsChecked)s.ischecked));
+
+            CreateMap<ToDo, ToDoDTO>()
+                .ForMember(d => d.ischecked, o => o.MapFrom(s => (int)s.ischecked));
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
         }
     }

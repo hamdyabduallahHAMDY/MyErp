@@ -31,7 +31,54 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
+        public async static Task<MainResponse<ToDoDTO>> ToDoDTO(List<ToDoDTO> insertDTO, bool isupdate = false)
+        {
+            MainResponse<ToDoDTO> response = new MainResponse<ToDoDTO>();
+            Errors<ToDoDTO> err = new Errors<ToDoDTO>();
+            bool hasError = false;
+            foreach (var customer in insertDTO)
+            {
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from Customers where Name = '{customer.Title}'");
+                if (DBcustomer.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Title));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
 
+                if (hasError)
+                {
+                    continue;
+                }
+                response.acceptedObjects.Add(customer);
+            }
+            return response;
+        }
+        public async static Task<MainResponse<FAQDTO>> FAQDTO(List<FAQDTO> insertDTO, bool isupdate = false)
+        {
+            MainResponse<FAQDTO> response = new MainResponse<FAQDTO>();
+            Errors<FAQDTO> err = new Errors<FAQDTO>();
+            bool hasError = false;
+            foreach (var customer in insertDTO)
+            {
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{customer.Error}'");
+                if (DBcustomer.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Error));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+
+                if (hasError)
+                {
+                    continue;
+                }
+                response.acceptedObjects.Add(customer);
+            }
+            return response;
+        }
         public async static Task<MainResponse<DocumentDTO>> DocumentDTO(DocumentDTO doc, bool isupdate = false)
         {
             MainResponse<DocumentDTO> response = new MainResponse<DocumentDTO>();

@@ -18,6 +18,11 @@ namespace MyErp.Core.Models
             InProgress = 1,
             Closed = 2
         }
+        public enum IsChecked
+        {
+           UnChecked = 0,
+           Checked = 1 
+        }
 
 
 }
