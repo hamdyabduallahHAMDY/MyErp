@@ -51,6 +51,22 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Ticket> { user };
             return response;
         }
+
+        public async Task<MainResponse<Ticket>> getTicketByStatus(int status)
+        {
+            MainResponse<Ticket> response = new MainResponse<Ticket>();
+            var tickets = await _unitOfWork.Tickets.GetBy(x => ((int)x.Status) == status);
+
+            if (tickets == null)
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+
+            response.acceptedObjects = tickets.ToList();
+            return response;
+        }
         public async Task<MainResponse<Ticket>> updateTicket(int id, TicketDTO userUpdated, string apiRootPath)
         {
             var response = new MainResponse<Ticket>();

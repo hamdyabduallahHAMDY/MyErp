@@ -38,6 +38,13 @@ namespace MyErp.Api.Controllers
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
+        [HttpGet("getByStatus")]
+        public async Task<IActionResult> GetbyStatus(int status)
+        {
+            var result = await ToDoServices.getByStatus(status);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
 
         [HttpPut("updateById")]
         public async Task<IActionResult> PutToDo(int id, [FromBody] List<ToDoDTO> todoUpdated)

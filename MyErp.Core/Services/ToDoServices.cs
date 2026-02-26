@@ -77,7 +77,26 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<ToDo> { todo };
             return response;
         }
+        public async Task<MainResponse<ToDo>> getByStatus(int status)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            ToDo todo = await _unitOfWork.ToDos.GetFirst(a => (int)a.ischecked == status);
+            if(todo == null)
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+            var today = DateTime.UtcNow.Date;
+            if (todo.LastCheckedAt?.Date != today)
+                todo.ischecked = (IsChecked)0;
+            else
+                todo.ischecked = (IsChecked)1;
 
+            response.acceptedObjects = new List<ToDo> { todo };
+            return response;
+
+        }
         // ADD
         public async Task<MainResponse<ToDo>> addToDo(List<ToDoDTO> todos)
         {

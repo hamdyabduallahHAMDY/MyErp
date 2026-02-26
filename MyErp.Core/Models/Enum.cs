@@ -21,7 +21,8 @@ namespace MyErp.Core.Models
         public enum IsChecked
         {
            UnChecked = 0,
-           Checked = 1 
+           Checked = 1 ,
+           inProgress = 2
         }
 
 
