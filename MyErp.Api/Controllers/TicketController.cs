@@ -66,7 +66,13 @@ namespace MyErp.Api.Controllers
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }
-
+        [HttpPut("UpadteStatus")]
+        public async Task<IActionResult> UpdateStatus(int id, int status)
+        {
+            var result = await UserServices.UpdateStatus(id, status);
+            var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPut");
+            return resultWithStatusCode;
+        }
 
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteUser(int id)
