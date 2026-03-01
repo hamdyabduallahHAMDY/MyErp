@@ -211,6 +211,39 @@ namespace MyErp.Core.Services
             return response;
         }
 
+        //UPDATE STATUS ONLY
+        public async Task<MainResponse<ToDo>> UpdateStatus(int id, int status)
+        {
+            var response = new MainResponse<ToDo>();
+
+            try
+            {
+                var existingTicket =
+                    await _unitOfWork.ToDos.GetFirst(t => t.Id == id);
+
+                if (existingTicket == null)
+                {
+                    response.errors.Add($"Ticket with ID {id} not found.");
+                    return response;
+                }
+
+                existingTicket.ischecked = (IsChecked)status;
+
+                await _unitOfWork.ToDos.Update(existingTicket);
+
+                response.acceptedObjects ??= new List<ToDo>();
+                response.acceptedObjects.Add(existingTicket);
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+
+            return response;
+        }
+
+
         // DELETE
         public async Task<MainResponse<ToDo>> deleteToDo(int id)
         {

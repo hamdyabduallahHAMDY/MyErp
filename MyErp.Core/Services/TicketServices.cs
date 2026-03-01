@@ -10,6 +10,7 @@ using MyErp.Core.Validation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -156,23 +157,18 @@ namespace MyErp.Core.Services
 
                 if (dto.Attachment != null && dto.Attachment.Length > 0)
                 {
-                    // Create Uploads folder inside API root
                     string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
 
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
 
-                    // Create unique filename
-
                     string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
 
-                    // Save file physically
                     using (var stream = new FileStream(fullPath, FileMode.Create))
                     {
                         await dto.Attachment.CopyToAsync(stream);
                     }
 
-                    // Save relative path in DB
                     savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
                 }
 
@@ -203,6 +199,38 @@ namespace MyErp.Core.Services
 
                 return response;
             }
+        }
+
+        public async Task<MainResponse<Ticket>> UpdateStatus(int id, int status)
+        {
+            var response = new MainResponse<Ticket>();
+
+            try
+            {
+                var existingTicket =
+                    await _unitOfWork.Tickets.GetFirst(t => t.Id == id);
+
+                if (existingTicket == null)
+                {
+                    response.errors.Add($"Ticket with ID {id} not found.");
+                    return response;
+                }
+
+                // ✅ SAFE UPDATE
+                existingTicket.Status = (Status)status;
+
+                await _unitOfWork.Tickets.Update(existingTicket);
+
+                response.acceptedObjects ??= new List<Ticket>();
+                response.acceptedObjects.Add(existingTicket);
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+
+            return response;
         }
 
         public async Task<MainResponse<Ticket>> deleteUser(int id)
