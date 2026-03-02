@@ -45,7 +45,7 @@ namespace MyErp.Core.Services
                 }
                 else
                 {
-                    t.ischecked = (IsChecked)1;
+                    t.ischecked = t.ischecked;
                 }
             }
 
@@ -218,27 +218,25 @@ namespace MyErp.Core.Services
 
             try
             {
-                var existingTodo =
+                var todo =
                     await _unitOfWork.ToDos.GetFirst(t => t.Id == id);
 
-                if (existingTodo == null)
+                if (todo == null)
                 {
                     response.errors.Add($"ToDo with ID {id} not found.");
                     return response;
                 }
 
-                existingTodo.ischecked = (IsChecked)status;
+                todo.ischecked = (IsChecked)status;
 
-                // ✅ CRITICAL FIX
-                if (status == 1)
-                    existingTodo.LastCheckedAt = DateTime.UtcNow;
-                else
-                    existingTodo.LastCheckedAt = null;
+                // ✅ Only FINISHED updates check date
+                if (todo.ischecked == IsChecked.Checked || todo.ischecked == IsChecked.inProgress || todo.ischecked == IsChecked.UnChecked)
+                    todo.LastCheckedAt = DateTime.UtcNow;
 
-                await _unitOfWork.ToDos.Update(existingTodo);
+                await _unitOfWork.ToDos.Update(todo);
 
                 response.acceptedObjects ??= new List<ToDo>();
-                response.acceptedObjects.Add(existingTodo);
+                response.acceptedObjects.Add(todo);
             }
             catch (Exception ex)
             {
