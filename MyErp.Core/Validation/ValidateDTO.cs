@@ -14,7 +14,7 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var customer in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where Name = '{customer.Name}'");
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where TaxRegistrationNumber = '{customer.TaxRegistrationNumber}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
@@ -157,7 +157,7 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var user in insertDTO)
             {
-                var DBuser = await ADO.GetExecuteQueryMySql<Models.Contract>($"select * from Contracts  where CompanyName = '{user.CompanyName}'");
+                var DBuser = await ADO.GetExecuteQueryMySql<Models.Contract>($"select * from Contracts  where regestrationNumber = '{user.regestrationNumber}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
                     response.errors.Add(err.ObjectErrorInvExist(user.CompanyName));

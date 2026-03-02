@@ -78,6 +78,18 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+        [HttpPost("importExcel")]
+        public async Task<IActionResult> ImportFromExcel(IFormFile file)
+        {
+            var result = await DocumentServices.ImportFromExcel(file);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<Document>
+                .GetApiResponseCode(result, "HttpPost");
+
+            return resultWithStatusCode;
+        }
+
         // DELETE
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteDocument(int id)
