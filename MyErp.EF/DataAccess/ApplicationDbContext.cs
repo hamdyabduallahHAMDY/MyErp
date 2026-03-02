@@ -1,4 +1,5 @@
 using Logger;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MyErp.Core.Models;
@@ -6,7 +7,7 @@ using Org.BouncyCastle.Utilities;
 
 namespace MyErp.EF.DataAccess;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
