@@ -218,21 +218,27 @@ namespace MyErp.Core.Services
 
             try
             {
-                var existingTicket =
+                var existingTodo =
                     await _unitOfWork.ToDos.GetFirst(t => t.Id == id);
 
-                if (existingTicket == null)
+                if (existingTodo == null)
                 {
-                    response.errors.Add($"Ticket with ID {id} not found.");
+                    response.errors.Add($"ToDo with ID {id} not found.");
                     return response;
                 }
 
-                existingTicket.ischecked = (IsChecked)status;
+                existingTodo.ischecked = (IsChecked)status;
 
-                await _unitOfWork.ToDos.Update(existingTicket);
+                // ✅ CRITICAL FIX
+                if (status == 1)
+                    existingTodo.LastCheckedAt = DateTime.UtcNow;
+                else
+                    existingTodo.LastCheckedAt = null;
+
+                await _unitOfWork.ToDos.Update(existingTodo);
 
                 response.acceptedObjects ??= new List<ToDo>();
-                response.acceptedObjects.Add(existingTicket);
+                response.acceptedObjects.Add(existingTodo);
             }
             catch (Exception ex)
             {
@@ -242,7 +248,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
 
         // DELETE
         public async Task<MainResponse<ToDo>> deleteToDo(int id)

@@ -129,8 +129,13 @@ namespace MyErp.Core.Mapping
             CreateMap<ToDo, ToDoDTO>().ReverseMap();
             CreateMap<ToDoDTO, ToDo>()
     .ForMember(d => d.ischecked, o => o.MapFrom(s => (IsChecked)s.ischecked));
+            CreateMap<DocumentDTO, Document>()
+                .ForMember(dest => dest.Attachment,
+                    opt => opt.Ignore());
 
-            CreateMap<ToDo, ToDoDTO>()
+            CreateMap<Document, DocumentDTO>()
+                .ForMember(dest => dest.Attachment,
+                    opt => opt.Ignore()); CreateMap<ToDo, ToDoDTO>()
                 .ForMember(d => d.ischecked, o => o.MapFrom(s => (int)s.ischecked));
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
         }

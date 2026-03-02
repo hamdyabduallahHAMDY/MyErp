@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyErp.Core.Mapping;
 using MyErp.EF.DataAccess;
+using OfficeOpenXml;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -31,6 +32,10 @@ MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
 //{
 //    options.Listen(System.Net.IPAddress.Parse("192.168.1.20"), 1234);
 //});
+
+
+// EPPlus License
+ExcelPackage.License.SetNonCommercialPersonal("MyErp Development");
 var app = builder.Build();
 app.UseCors();
 app.UseStaticFiles();
