@@ -14,7 +14,7 @@ namespace MyErp.Core.Interfaces
     public interface IUnitOfWork : IDisposable
     {
        
-        ICmd<User> Users { get; }
+     //   ICmd<User> Users { get; }
         ICmd<Ticket> Tickets { get; }
         ICmd<Contract> Contracts { get; }
         ICmd<UserSession> UserSessions { get; }
@@ -22,6 +22,7 @@ namespace MyErp.Core.Interfaces
         ICmd<Document> Documents { get; }
         ICmd<FAQ> FAQs { get; }
         ICmd<ToDo> ToDos { get; }
+        //ICmd<applicationUSER> applicationUSERs { get; }
         Task<int> Complete();
 
     }

@@ -120,7 +120,7 @@ namespace MyErp.Core.Mapping
             //CreateMap<StockReqDetail, StockReqDetailDTO>().ReverseMap();
             //CreateMap<StockTaking, StockTakingDTO>().ReverseMap();
             //CreateMap<Treasury, TreasuryDTO>().ReverseMap();
-            CreateMap<User, UserDTO>().ReverseMap();
+          //  CreateMap<User, UserDTO>().ReverseMap();
             CreateMap<Ticket, TicketDTO>().ReverseMap();
             CreateMap<Contract, ContractDTO>().ReverseMap();
             CreateMap<UserSession, UserSessionDTO>().ReverseMap();

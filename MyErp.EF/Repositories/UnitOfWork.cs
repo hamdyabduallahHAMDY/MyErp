@@ -20,7 +20,7 @@ namespace MyErp.EF.Repositories
     {
         private readonly ApplicationDbContext _context;
      
-        public ICmd<User> Users { get; private set; }
+    //    public ICmd<User> Users { get; private set; }
         public ICmd<Ticket> Tickets { get; private set; }   
         public ICmd<Contract> Contracts { get; private set; }
         public ICmd<UserSession> UserSessions { get; private set; } 
@@ -28,11 +28,12 @@ namespace MyErp.EF.Repositories
         public ICmd<Document> Documents { get; private set; }
         public ICmd<FAQ> FAQs { get; private set; }
         public ICmd<ToDo> ToDos { get; private set; }
+        //public ICmd<applicationUSER> applicationUSERs { get; private set; }
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
            
-            Users = new Cmd<User>(_context);
+           // Users = new Cmd<User>(_context);
            
             Tickets = new Cmd<Ticket>(_context);
 
@@ -47,6 +48,7 @@ namespace MyErp.EF.Repositories
             FAQs = new Cmd<FAQ>(_context);
 
             ToDos = new Cmd<ToDo>(_context);
+            //applicationUSERs = new Cmd<applicationUSER>(_context);
 
         }
         public async Task<int> Complete()
