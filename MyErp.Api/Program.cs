@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyErp.Core.Mapping;
+using MyErp.Core.Models;
 using MyErp.EF.DataAccess;
 using OfficeOpenXml;
 using System;
@@ -34,8 +35,9 @@ var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
 
 
 // 2. Identity Service
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 // 3. JWT Authentication
 builder.Services.AddAuthentication(options =>

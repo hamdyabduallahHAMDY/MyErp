@@ -8,7 +8,7 @@ using MyErp.Core.Models;
 
 namespace MyErp.Core.Interfaces
 {
-    public interface ICmd<T> where T : Common
+    public interface ICmd<T> where T : class
     {
         Task<T> Add(T entity);
         Task<List<T>> Add(List<T> entities);
