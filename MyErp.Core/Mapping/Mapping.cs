@@ -122,6 +122,7 @@ namespace MyErp.Core.Mapping
             //CreateMap<Treasury, TreasuryDTO>().ReverseMap();
           //  CreateMap<User, UserDTO>().ReverseMap();
             CreateMap<Ticket, TicketDTO>().ReverseMap();
+            CreateMap<Ticket, TickectinvioceDTO>().ReverseMap();
             CreateMap<Contract, ContractDTO>().ReverseMap();
             CreateMap<UserSession, UserSessionDTO>().ReverseMap();
             CreateMap<Customer, CustomerDTO>().ReverseMap();
@@ -137,6 +138,9 @@ namespace MyErp.Core.Mapping
                 .ForMember(dest => dest.Attachment,
                     opt => opt.Ignore()); CreateMap<ToDo, ToDoDTO>()
                 .ForMember(d => d.ischecked, o => o.MapFrom(s => (int)s.ischecked));
+
+
+            CreateMap<CalenderTask, CalenderTaskDTO>().ReverseMap();
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
         }
     }

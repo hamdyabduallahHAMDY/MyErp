@@ -31,6 +31,29 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
+        public async static Task<MainResponse<CalenderTaskDTO>> CalenderTaskDTO(List<CalenderTaskDTO> insertDTO, bool isupdate = false)
+        {
+            MainResponse<CalenderTaskDTO> response = new MainResponse<CalenderTaskDTO>();
+            Errors<CalenderTaskDTO> err = new Errors<CalenderTaskDTO>();
+            bool hasError = false;
+            foreach (var customer in insertDTO)
+            {
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{customer.Title}'");
+                if (DBcustomer.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Title));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+                if (hasError)
+                {
+                    continue;
+                }
+                response.acceptedObjects.Add(customer);
+            }
+            return response;
+        }
         public async static Task<MainResponse<ToDoDTO>> ToDoDTO(List<ToDoDTO> insertDTO, bool isupdate = false)
         {
             MainResponse<ToDoDTO> response = new MainResponse<ToDoDTO>();

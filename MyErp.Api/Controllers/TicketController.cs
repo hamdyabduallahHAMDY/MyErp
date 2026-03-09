@@ -48,6 +48,13 @@ namespace MyErp.Api.Controllers
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
+        [HttpGet("getByTaxRegTaxId")]
+        public async Task<IActionResult> GetUserByTaxRegTaxId(int status)
+        {
+            var result = await UserServices.getTicketByTaxRegistrationId(status);
+            var resultWithStatusCode = ResponseStatusCode<TickectinvioceDTO>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
         [HttpPut("updateById")]
         public async Task<IActionResult> PutUser(int id, [FromForm] TicketDTO userupdated )
         {

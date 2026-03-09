@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.Http;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
+using OfficeOpenXml;
 
 namespace MyErp.Core.Services
 {
@@ -22,7 +24,7 @@ namespace MyErp.Core.Services
         }
 
         // GET ALL
-        public async Task<MainResponse<ToDo>> getToDoList()
+        public async Task<MainResponse<ToDo>> getToDoListDAily()
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
@@ -75,6 +77,19 @@ namespace MyErp.Core.Services
                 todo.ischecked = (IsChecked)1;
 
             response.acceptedObjects = new List<ToDo> { todo };
+            return response;
+        }
+        public async Task<MainResponse<ToDo>> GetAll()
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            var todos = await _unitOfWork.ToDos.GetAll();
+            if (todos == null || !todos.Any())
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+            response.acceptedObjects = todos.ToList();
             return response;
         }
         public async Task<MainResponse<ToDo>> getByStatus(int status)
@@ -142,6 +157,91 @@ namespace MyErp.Core.Services
                 if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
                 return response;
             }
+        }
+
+        //ADD EXCEL
+        public async Task<MainResponse<ToDo>> ImportFromExcel(IFormFile excelFile)
+        {
+            var response = new MainResponse<ToDo>();
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    response.errors.Add("Excel file is empty.");
+                    return response;
+                }
+
+                var docsToAdd = new List<ToDo>();
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                {
+                    response.errors.Add("Worksheet not found.");
+                    return response;
+                }
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++) // skip header
+                {
+                    var name = worksheet.Cells[r, 1].Text?.Trim();
+                    var Description = worksheet.Cells[r, 2].Text?.Trim();
+                    var AssignedTo = worksheet.Cells[r, 3].Text?.Trim();
+                    var CreatedBy = worksheet.Cells[r, 4].Text?.Trim();
+                    var isCheckedText = worksheet.Cells[r, 5].Text?.Trim();
+                    
+
+                    if (string.IsNullOrWhiteSpace(name))
+                        continue;
+
+                    //  DTO creation
+                    var dto = new ToDoDTO
+                    {
+                        Title = name,
+                        Description = Description,
+                                                AssignedTo = AssignedTo,
+                                                CreatedBy = CreatedBy,
+                                                ischecked = int.TryParse(isCheckedText, out int isCheckedVal) ? isCheckedVal : 0,
+                    };
+
+                    //  AutoMapper mapping
+                    var document = _mapper.Map<ToDo>(dto);
+
+                    // extra safety
+                    //document.Attachment = null;
+
+                    docsToAdd.Add(document);
+                }
+
+                if (!docsToAdd.Any())
+                {
+                    response.errors.Add("No valid rows found.");
+                    return response;
+                }
+
+                foreach (var doc in docsToAdd)
+                    await _unitOfWork.ToDos.Add(doc);
+
+                response.acceptedObjects = docsToAdd;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+
+                response.errors.Add(ex.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
         }
 
         // UPDATE
@@ -230,7 +330,7 @@ namespace MyErp.Core.Services
                 todo.ischecked = (IsChecked)status;
 
                 // ✅ Only FINISHED updates check date
-                if (todo.ischecked == IsChecked.Checked || todo.ischecked == IsChecked.inProgress || todo.ischecked == IsChecked.UnChecked)
+                if (todo.ischecked == IsChecked.Closed || todo.ischecked == IsChecked.InProgress || todo.ischecked == IsChecked.todo)
                     todo.LastCheckedAt = DateTime.UtcNow;
 
                 await _unitOfWork.ToDos.Update(todo);

@@ -14,16 +14,19 @@ namespace MyErp.Core.Models
         }
         public enum Status
         {
-            Open = 0,
+            todo = 0,
             InProgress = 1,
-            Closed = 2
-        }
+            Closed = 2,
+            archived = 3
+    }
         public enum IsChecked
         {
-           UnChecked = 0,
-           Checked = 1 ,
-           inProgress = 2
-        }
+
+        todo = 0,
+        InProgress = 1,
+        Closed = 2,
+        archived = 3
+    }
 
 
 }

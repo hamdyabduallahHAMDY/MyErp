@@ -13,5 +13,6 @@ namespace MyErp.Core.DTO
         public string? AssignedTo { get; set; }
         public string? CreatedBy { get; set; }
         public int ischecked { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

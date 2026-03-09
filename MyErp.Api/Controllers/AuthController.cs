@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using MyErp.Core.Models;
+using OfficeOpenXml;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -21,6 +22,84 @@ namespace MyErp.Api.Controllers
             _userManager = userManager;
             _configuration = configuration;
         }
+        // ================= IMPORT USERS FROM EXCEL =================
+        [HttpPost("import-users-excel")]
+        public async Task<IActionResult> ImportUsersFromExcel(IFormFile excelFile)
+        {
+            var response = new
+            {
+                acceptedObjects = new List<object>(),
+                errors = new List<string>()
+            };
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                    return BadRequest("Excel file is empty.");
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                    return BadRequest("Worksheet not found.");
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++) // skip header
+                {
+                    var username = worksheet.Cells[r, 1].Text?.Trim();
+                    var email = worksheet.Cells[r, 2].Text?.Trim();
+                    var password = worksheet.Cells[r, 3].Text?.Trim();
+                    var rights = worksheet.Cells[r, 4].Text?.Trim();
+                    var taxId = worksheet.Cells[r, 5].Text?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(username))
+                        continue;
+
+                    var existingUser = await _userManager.FindByNameAsync(username);
+
+                    if (existingUser != null)
+                    {
+                        response.errors.Add($"Row {r}: User {username} already exists.");
+                        continue;
+                    }
+
+                    User user = new()
+                    {
+                        UserName = username,
+                        Email = email,
+                        Rights = rights,
+                        registrationTaxid = taxId
+                    };
+
+                    var result = await _userManager.CreateAsync(user, password);
+
+                    if (!result.Succeeded)
+                    {
+                        response.errors.Add($"Row {r}: {string.Join(",", result.Errors.Select(e => e.Description))}");
+                        continue;
+                    }
+
+                    response.acceptedObjects.Add(new
+                    {
+                        username,
+                        email,
+                        rights,
+                        taxId
+                    });
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
         // ================= REGISTER =================
         [HttpPost("register")]
@@ -34,7 +113,7 @@ namespace MyErp.Api.Controllers
             {
                 Email = model.Email,
                 UserName = model.Username,
-                Rights = "User" // default role
+                Rights = model.Rights
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -256,7 +335,7 @@ namespace MyErp.Api.Controllers
         }
     // ================= DTOs =================
 
-    public record RegisterModel(string Username, string Email, string Password);
+    public record RegisterModel(string Username, string Email, string Password , string Rights);
     public record LoginModel(string Username, string Password);
     public record UpdateRightsModel(string Username, string Rights);
     public record UpdateUserByNameModel(string Id, string? Email, string? NewUsername, string? Rights);

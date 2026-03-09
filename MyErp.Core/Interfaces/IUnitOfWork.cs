@@ -22,6 +22,7 @@ namespace MyErp.Core.Interfaces
         ICmd<Document> Documents { get; }
         ICmd<FAQ> FAQs { get; }
         ICmd<ToDo> ToDos { get; }
+        ICmd<CalenderTask> CalenderTasks { get; }
         //ICmd<applicationUSER> applicationUSERs { get; }
         Task<int> Complete();
 

@@ -64,6 +64,14 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+        [HttpPost("addFromExcel")]
+        public async Task<IActionResult> ImportFromExcel(IFormFile file)
+        {
+            var result = await CustomerServices.ImportFromExcel(file);
+            var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPost");
+            return resultWithStatusCode;
+        }
+
         [HttpDelete("deleteById")]
         public async Task<IActionResult> putCustomer(int id)
         {

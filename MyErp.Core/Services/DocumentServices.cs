@@ -100,7 +100,8 @@ namespace MyErp.Core.Services
                 Document document = new Document
                 {
                     Name = dto.Name,
-                    Attachment = dto.Attachment.FileName
+                    Attachment = dto.Attachment.FileName,
+                    subject = dto.subject
                 };
 
                 await _unitOfWork.Documents.Add(document);
@@ -156,7 +157,7 @@ namespace MyErp.Core.Services
                 for (int r = 2; r <= rows; r++) // skip header
                 {
                     var name = worksheet.Cells[r, 1].Text?.Trim();
-
+                    var subject = worksheet.Cells[r, 2].Text?.Trim();
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
 
@@ -164,6 +165,7 @@ namespace MyErp.Core.Services
                     var dto = new DocumentDTO
                     {
                         Name = name,
+                        subject = subject,
                         Attachment = null
                     };
 

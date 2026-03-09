@@ -23,10 +23,17 @@ namespace MyErp.Api.Controllers
             ToDoServices = new ToDoServices(unitOfWork, _mapper);
         }
 
+        [HttpGet("getAllDaily")]
+        public async Task<IActionResult> GetToDoListDaily()
+        {
+            var result = await ToDoServices.getToDoListDAily();
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetToDoList()
         {
-            var result = await ToDoServices.getToDoList();
+            var result = await ToDoServices.GetAll();
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
@@ -67,6 +74,14 @@ namespace MyErp.Api.Controllers
         public async Task<IActionResult> AddToDo([FromBody] List<ToDoDTO> todos)
         {
             var result = await ToDoServices.addToDo(todos);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
+            return resultWithStatusCode;
+        }
+
+        [HttpPost("addFromExcel")]
+        public async Task<IActionResult> ImportFromExcel(IFormFile file)
+        {
+            var result = await ToDoServices.ImportFromExcel(file);
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }

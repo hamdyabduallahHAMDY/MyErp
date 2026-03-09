@@ -52,7 +52,25 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Ticket> { user };
             return response;
         }
-
+        public async Task<MainResponse<TickectinvioceDTO>> getTicketByTaxRegistrationId(int taxRegistrationId)
+        {
+            MainResponse<TickectinvioceDTO> response = new MainResponse<TickectinvioceDTO>();
+            var tickets = await _unitOfWork.Tickets.GetBy(x => x.TaxRegistrationId == taxRegistrationId);
+            if (tickets == null || !tickets.Any())
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+            response.acceptedObjects = tickets
+                .Select(x => new TickectinvioceDTO
+                {
+                    Attachment = x.Attachment,
+                    Description = x.Description,
+                    Status = x.Status.ToString()
+                })
+                .ToList(); return response;
+        }
         public async Task<MainResponse<Ticket>> getTicketByStatus(int status)
         {
             MainResponse<Ticket> response = new MainResponse<Ticket>();

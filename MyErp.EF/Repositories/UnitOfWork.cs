@@ -28,6 +28,8 @@ namespace MyErp.EF.Repositories
         public ICmd<Document> Documents { get; private set; }
         public ICmd<FAQ> FAQs { get; private set; }
         public ICmd<ToDo> ToDos { get; private set; }
+
+        public ICmd<CalenderTask> CalenderTasks { get; private set; }
         //public ICmd<applicationUSER> applicationUSERs { get; private set; }
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -48,6 +50,8 @@ namespace MyErp.EF.Repositories
             FAQs = new Cmd<FAQ>(_context);
 
             ToDos = new Cmd<ToDo>(_context);
+
+            CalenderTasks = new Cmd<CalenderTask>(_context);
             //applicationUSERs = new Cmd<applicationUSER>(_context);
 
         }

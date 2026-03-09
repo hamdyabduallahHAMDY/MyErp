@@ -35,6 +35,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<Document> Documents { get; set; }
     public DbSet<FAQ> FAQs { get; set; }
     public DbSet<ToDo> ToDos { get; set; }
+    public DbSet<CalenderTask> CalenderTasks { get; set; }
     //public DbSet<AppUser> applicationUSERs { get; set; }
     #endregion
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

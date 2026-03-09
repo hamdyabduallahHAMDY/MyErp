@@ -9,6 +9,7 @@ namespace MyErp.Core.Models
     public class Document : Common
     {
         public string Name { get; set; }
+        public string? subject { get; set; }
         public string? Attachment { get; set; }
     }
 }

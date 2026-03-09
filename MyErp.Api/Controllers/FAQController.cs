@@ -79,6 +79,14 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+        [HttpPost("addFromExcel")]
+        public async Task<IActionResult> ImportFromExcel(IFormFile file)
+        {
+            var result = await FAQServices.ImportFromExcel(file);
+            var resultWithStatusCode = ResponseStatusCode<FAQ>.GetApiResponseCode(result, "HttpPost");
+            return resultWithStatusCode;
+        }
+
         // ==============================
         // DELETE FAQ
         // ==============================
