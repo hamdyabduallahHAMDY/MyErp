@@ -82,21 +82,24 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-                if (calen.EndTime < DateTime.Now)
+                var now = DateTime.Now;
+
+                if (calen.EndTime <= now)
                 {
-                    response.errors.Add("EndTime Cant be before the current time ");
+                    response.errors.Add("EndTime can't be before the current time.");
                     response.rejectedObjects.Add(calen);
                     hasError = true;
                     continue;
                 }
-                if (calen.StartTime > calen.EndTime)
+
+                if (calen.StartTime >= calen.EndTime)
                 {
-                    response.errors.Add("startTime cant be after endtime ");
+                    response.errors.Add("StartTime can't be after or equal to EndTime.");
                     response.rejectedObjects.Add(calen);
                     hasError = true;
                     continue;
                 }
-                if (!(calen.allday == "0" || calen.allday == "1"))
+                if (!(calen.allday == "false" || calen.allday == "true"))
                 {
                     response.errors.Add("Invalid allday status.");
                     response.rejectedObjects.Add(calen);
@@ -119,21 +122,21 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var todo in insertDTO)
             {
-                if (todo.Title.IsStringValidation())
+                if (!(todo.Title.IsStringValidation()))
                 {
                     response.errors.Add(err.ObjectErrorInvExist(todo.Title));
                     response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
                 }
-                if (todo.Description.IsStringValidation())
+                if (!todo.Description.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(todo.Description));
                     response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
                 }
-                var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.AssignedTo}");
+                var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from AspNetUsers where Id = {todo.AssignedTo}");
                 if (todo.AssignedTo.IsDigitsOrPlusOnly())
                 {
                     response.errors.Add("Error using unexisted user ");
@@ -217,13 +220,13 @@ namespace MyErp.Core.Validation
                     hasError = true;
                    
                 }
-                if (doc.Name.IsStringValidation())
+                if (!doc.Name.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(doc.Name));
                     response.rejectedObjects.Add(doc);
                     hasError = true;
                 }
-                if(doc.subject.IsStringValidation())
+                if(!doc.subject.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(doc.Name));
                     response.rejectedObjects.Add(doc);

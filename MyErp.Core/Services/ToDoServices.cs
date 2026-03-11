@@ -38,14 +38,16 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                var today = DateTime.UtcNow.Date;
+                var today = DateTime.UtcNow;
 
                 foreach (var todo in todos)
                 {
-                    if (todo.Daily && todo.LastCheckedAt?.Date != today)
+                    if (todo.Daily) { 
+                    if ((today - todo.LastCheckedAt.Value).TotalMinutes >=2)
                     {
                         todo.ischecked = (IsChecked)0;
                         await _unitOfWork.ToDos.Update(todo);
+                    }
                     }
                 }
 
@@ -130,7 +132,10 @@ namespace MyErp.Core.Services
 
                 var todoList = _mapper.Map<List<ToDo>>(validList.acceptedObjects);
                 var rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
-
+                foreach(var todo in todos)
+                {
+                    todo.LastCheckedAt = DateTime.UtcNow;
+                }
                 if (todoList != null && todoList.Count > 0)
                 {
                     await _unitOfWork.ToDos.Add(todoList);
@@ -220,7 +225,7 @@ namespace MyErp.Core.Services
 
                 todo.ischecked = (IsChecked)status;
 
-                if (status == 1)
+                if (status == 1 || status == 2 || status == 3)
                     todo.LastCheckedAt = DateTime.UtcNow;
                 else
                     todo.LastCheckedAt = null;

@@ -1,0 +1,56 @@
+2026-01-25 3:17:17 PM|Info| IN Login, Create DBContext 
+2026-01-25 3:17:24 PM|Info| 306151650
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,Collect All Jobs 
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,There are Jobs will be executed ....
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Receipt Job And Its Time =23:00
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,Import Products Job Name => Import Products And Its Time =07:00
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,SyncProducts Job  Name => Send Products And Its Time =08:00
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:10
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:40
+2026-01-25 3:17:25 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Return Job And Its Time =23:30
+2026-01-25 3:17:25 PM|Info| Number Of Jobs Will Be Executed => 6
+2026-01-25 3:17:25 PM|Info| In Auto Send Excel,
+2026-01-25 3:17:25 PM|Info| Server started on port 0...
+2026-01-25 3:17:31 PM|Info| Unlocks done.
+2026-01-25 3:30:28 PM|Info| IN Login, Create DBContext 
+2026-01-25 3:30:34 PM|Info| 306151650
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,Collect All Jobs 
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,There are Jobs will be executed ....
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Receipt Job And Its Time =23:00
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,Import Products Job Name => Import Products And Its Time =07:00
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,SyncProducts Job  Name => Send Products And Its Time =08:00
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:10
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:40
+2026-01-25 3:30:35 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Return Job And Its Time =23:30
+2026-01-25 3:30:35 PM|Info| Number Of Jobs Will Be Executed => 6
+2026-01-25 3:30:35 PM|Info| In Auto Send Excel,
+2026-01-25 3:30:35 PM|Info| Server started on port 0...
+2026-01-25 3:32:51 PM|Info| Unlocks done.
+2026-01-25 3:32:53 PM|Info| Another instance of the application is already running.
+2026-01-25 3:32:55 PM|Info| IN Login, Create DBContext 
+2026-01-25 3:33:19 PM|Info| 306151650
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,Collect All Jobs 
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,There are Jobs will be executed ....
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Receipt Job And Its Time =23:00
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,Import Products Job Name => Import Products And Its Time =07:00
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,SyncProducts Job  Name => Send Products And Its Time =08:00
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:10
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,SyncReceipt Job  Name => Send Receipt And Its Time =23:40
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,Import Receipt Job Name => Import Return Job And Its Time =23:30
+2026-01-25 3:33:21 PM|Info| In MainErpAutoSend ,Refresh Receipt Job Name => Sync Job And Its Time =23:50
+2026-01-25 3:33:21 PM|Info| Number Of Jobs Will Be Executed => 7
+2026-01-25 3:33:21 PM|Info| In Auto Send Excel,
+2026-01-25 3:33:21 PM|Info| Server started on port 0...
+2026-01-25 3:43:12 PM|Info| Started Getting Data From DataGridView
+2026-01-25 3:43:12 PM|Info| Finished Getting Data From DataGridView, The Number of Items = 129
+2026-01-25 3:43:12 PM|Info| Data Is Splitted Into 1 Groubs
+2026-01-25 3:43:12 PM|Info| Sending The Request To Portal
+2026-01-25 3:43:13 PM|Info| Response Status Code Is : OK
+2026-01-25 3:43:14 PM|Info| Updating Product Status In The DB...
+2026-01-25 3:43:28 PM|Info| Started Getting Data From DataGridView
+2026-01-25 3:43:28 PM|Info| Finished Getting Data From DataGridView, The Number of Items = 129
+2026-01-25 3:43:28 PM|Info| Data Is Splitted Into 1 Groubs
+2026-01-25 3:43:28 PM|Info| Sending The Request To Portal
+2026-01-25 3:43:30 PM|Info| Response Status Code Is : OK
+2026-01-25 3:43:31 PM|Info| Updating Product Status In The DB...
+2026-01-25 5:40:05 PM|Info| Unlocks done.

@@ -1,0 +1,41 @@
+11/02/2026 04:01:23 م|Info| Downloading Receipts During the Period between 01/01/2026 12:00:00 ص and 01/02/2026 12:00:00 ص
+11/02/2026 04:01:25 م|Info| The Response Status Code Is : BadRequest
+11/02/2026 04:01:25 م|Info| StatusCode: BadRequest
+11/02/2026 04:01:25 م|Info| StatusDescription: Bad Request
+11/02/2026 04:01:25 م|Info| Content: {
+  "correlationId": "0HNGIGDF5TJI1:00000013",
+  "details": [
+    {
+      "code": "InvalidDateTimeReceivedFrom",
+      "target": "DateTimeReceivedFrom",
+      "message": "Invalid value for field DateTimeReceivedFrom"
+    },
+    {
+      "code": "InvalidDateTimeReceivedTo",
+      "target": "DateTimeReceivedTo",
+      "message": "Invalid value for field DateTimeReceivedTo"
+    }
+  ]
+}
+11/02/2026 04:01:25 م|Info| Response From API IS NULL !!...Please Check Your Internet Connection...
+11/02/2026 04:01:25 م|Info| Downloading Receipts During the Period between 01/02/2026 12:00:00 ص and 11/02/2026 11:59:59 م
+11/02/2026 04:01:27 م|Info| The Response Status Code Is : BadRequest
+11/02/2026 04:01:27 م|Info| StatusCode: BadRequest
+11/02/2026 04:01:27 م|Info| StatusDescription: Bad Request
+11/02/2026 04:01:27 م|Info| Content: {
+  "correlationId": "0HNGIGDF38C6A:0000000A",
+  "details": [
+    {
+      "code": "InvalidDateTimeReceivedFrom",
+      "target": "DateTimeReceivedFrom",
+      "message": "Invalid value for field DateTimeReceivedFrom"
+    },
+    {
+      "code": "InvalidDateTimeReceivedTo",
+      "target": "DateTimeReceivedTo",
+      "message": "Invalid value for field DateTimeReceivedTo"
+    }
+  ]
+}
+11/02/2026 04:01:27 م|Info| Response From API IS NULL !!...Please Check Your Internet Connection...
+11/02/2026 04:01:27 م|Info| Mission Done, 0 Receipts Are Downloaded 
