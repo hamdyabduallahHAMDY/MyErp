@@ -44,6 +44,10 @@ namespace MyErp.Core.Global
         {
             return $"This {typeof(T).Name.Replace("DTO", "")} with Internal Id =<{Internalid}> : Exsist Before In Database !!";
         }
+        public string ObjectIsStringAndNumbersOnly(string input)
+        {
+            return $"This {typeof(T).Name.Replace("DTO","")} with internalId =<{input}> : Has invalid string and numbers only input";
+        }
         public string ObjectErrorInTaxType(string taxType, string Internalid)
         {
             return $"This {typeof(T).Name.Replace("DTO", "")} with Internal Id =<{Internalid}> : Has Invalid Customer Type: ({taxType}) !!, Customer Type must be B, P, or F. ";

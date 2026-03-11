@@ -22,14 +22,6 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             ToDoServices = new ToDoServices(unitOfWork, _mapper);
         }
-
-        [HttpGet("getAllDaily")]
-        public async Task<IActionResult> GetToDoListDaily()
-        {
-            var result = await ToDoServices.getToDoListDAily();
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
-        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetToDoList()
         {
@@ -94,14 +86,6 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
-        // OPTIONAL (recommended): toggle check/uncheck for daily tasks
-        // Expects a boolean: true = check now, false = uncheck
-        [HttpPut("toggleCheckById")]
-        public async Task<IActionResult> ToggleCheck(int id, [FromQuery] bool check)
-        {
-            var result = await ToDoServices.toggleCheck(id, check);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
-            return resultWithStatusCode;
-        }
+        
     }
 }

@@ -246,7 +246,7 @@ namespace MyErp.Core.Services
                 }
 
                 var dto = validList.acceptedObjects[0];
-
+                
                 _mapper.Map(dto, existingDocument);
 
                 await _unitOfWork.Documents.Update(existingDocument);

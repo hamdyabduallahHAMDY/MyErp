@@ -23,35 +23,42 @@ namespace MyErp.Core.Services
             _mapper = mapper;
         }
 
-        // GET ALL
-        public async Task<MainResponse<ToDo>> getToDoListDAily()
+        // GET ALL (with Daily reset)
+        public async Task<MainResponse<ToDo>> GetAll()
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
-            var todos = await _unitOfWork.ToDos.GetAll();
-            
-            // OPTIONAL: "Daily reset" display logic (no DB update)
-            // If it wasn't checked today -> treat as unchecked in returned objects
-            var today = DateTime.UtcNow.Date;
-            var x = today;
-            foreach (var t in todos)
+            try
             {
-                // If LastCheckedAt is nullable, use: t.LastCheckedAt?.Date
-                // If not nullable (your current model), this still works but new tasks default to "today" (bad).
-                var last = t.LastCheckedAt?.Date;
+                var todos = await _unitOfWork.ToDos.GetAll();
 
-                if (last != today)
+                if (todos == null || !todos.Any())
                 {
-                    // force unchecked in response (in-memory only)
-                    t.ischecked = (IsChecked)0;
+                    response.errors.Add(Errors.ObjectNotFound());
+                    return response;
                 }
-                else
+
+                var today = DateTime.UtcNow.Date;
+
+                foreach (var todo in todos)
                 {
-                    t.ischecked = t.ischecked;
+                    if (todo.Daily && todo.LastCheckedAt?.Date != today)
+                    {
+                        todo.ischecked = (IsChecked)0;
+                        await _unitOfWork.ToDos.Update(todo);
+                    }
                 }
+
+                response.acceptedObjects = todos.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
             }
 
-            response.acceptedObjects = todos.ToList();
             return response;
         }
 
@@ -60,58 +67,58 @@ namespace MyErp.Core.Services
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
-            ToDo todo = await _unitOfWork.ToDos.GetById(id);
-
-            if (todo == null)
+            try
             {
-                string error = Errors.ObjectNotFound();
-                response.errors = new List<string> { error };
-                return response;
+                var todo = await _unitOfWork.ToDos.GetById(id);
+
+                if (todo == null)
+                {
+                    response.errors.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+
+                var today = DateTime.UtcNow.Date;
+
+                if (todo.Daily && todo.LastCheckedAt?.Date != today)
+                    todo.ischecked = (IsChecked)0;
+
+                response.acceptedObjects.Add(todo);
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
             }
 
-            // daily reset display logic
-            var today = DateTime.UtcNow.Date;
-            if (todo.LastCheckedAt?.Date != today)
-                todo.ischecked = (IsChecked)0;
-            else
-                todo.ischecked = (IsChecked)1;
+            return response;
+        }
 
-            response.acceptedObjects = new List<ToDo> { todo };
-            return response;
-        }
-        public async Task<MainResponse<ToDo>> GetAll()
-        {
-            MainResponse<ToDo> response = new MainResponse<ToDo>();
-            var todos = await _unitOfWork.ToDos.GetAll();
-            if (todos == null || !todos.Any())
-            {
-                string error = Errors.ObjectNotFound();
-                response.errors = new List<string> { error };
-                return response;
-            }
-            response.acceptedObjects = todos.ToList();
-            return response;
-        }
+        // GET BY STATUS
         public async Task<MainResponse<ToDo>> getByStatus(int status)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
-            ToDo todo = await _unitOfWork.ToDos.GetFirst(a => (int)a.ischecked == status);
-            if(todo == null)
+
+            try
             {
-                string error = Errors.ObjectNotFound();
-                response.errors = new List<string> { error };
-                return response;
+                var todos = await _unitOfWork.ToDos.GetAll(a => (int)a.ischecked == status);
+
+                if (todos == null || !todos.Any())
+                {
+                    response.errors.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+
+                response.acceptedObjects = todos.ToList();
             }
-            var today = DateTime.UtcNow.Date;
-            if (todo.LastCheckedAt?.Date != today)
-                todo.ischecked = (IsChecked)0;
-            else
-                todo.ischecked = (IsChecked)1;
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
 
-            response.acceptedObjects = new List<ToDo> { todo };
             return response;
-
         }
+
         // ADD
         public async Task<MainResponse<ToDo>> addToDo(List<ToDoDTO> todos)
         {
@@ -119,25 +126,13 @@ namespace MyErp.Core.Services
 
             try
             {
-                // You need to implement this like ValidateDTO.UserDTO(...)
                 var validList = await ValidateDTO.ToDoDTO(todos);
 
-                List<ToDo> todoList = _mapper.Map<List<ToDo>>(validList.acceptedObjects);
-                List<ToDo> rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
+                var todoList = _mapper.Map<List<ToDo>>(validList.acceptedObjects);
+                var rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
 
                 if (todoList != null && todoList.Count > 0)
                 {
-                    // Important: Set LastCheckedAt only when checked
-                    foreach (var t in todoList)
-                    {
-                        // dto.ischecked is int -> map/cast to enum
-                        // If checked => set LastCheckedAt = now; else set to old date
-                        if ((int)t.ischecked == 1)
-                            t.LastCheckedAt = DateTime.UtcNow;
-                        else
-                            t.LastCheckedAt = DateTime.MinValue; // better: null if you change to DateTime?
-                    }
-
                     await _unitOfWork.ToDos.Add(todoList);
                     response.acceptedObjects = todoList;
                 }
@@ -147,94 +142,10 @@ namespace MyErp.Core.Services
                     response.rejectedObjects = rejectedList;
                     response.errors = validList.errors ?? new List<string>();
                 }
-
-                return response;
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
-                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
-                return response;
-            }
-        }
-
-        //ADD EXCEL
-        public async Task<MainResponse<ToDo>> ImportFromExcel(IFormFile excelFile)
-        {
-            var response = new MainResponse<ToDo>();
-
-            try
-            {
-                if (excelFile == null || excelFile.Length == 0)
-                {
-                    response.errors.Add("Excel file is empty.");
-                    return response;
-                }
-
-                var docsToAdd = new List<ToDo>();
-
-                using var ms = new MemoryStream();
-                await excelFile.CopyToAsync(ms);
-                ms.Position = 0;
-
-                using var package = new ExcelPackage(ms);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-
-                if (worksheet == null)
-                {
-                    response.errors.Add("Worksheet not found.");
-                    return response;
-                }
-
-                int rows = worksheet.Dimension?.Rows ?? 0;
-
-                for (int r = 2; r <= rows; r++) // skip header
-                {
-                    var name = worksheet.Cells[r, 1].Text?.Trim();
-                    var Description = worksheet.Cells[r, 2].Text?.Trim();
-                    var AssignedTo = worksheet.Cells[r, 3].Text?.Trim();
-                    var CreatedBy = worksheet.Cells[r, 4].Text?.Trim();
-                    var isCheckedText = worksheet.Cells[r, 5].Text?.Trim();
-                    
-
-                    if (string.IsNullOrWhiteSpace(name))
-                        continue;
-
-                    //  DTO creation
-                    var dto = new ToDoDTO
-                    {
-                        Title = name,
-                        Description = Description,
-                                                AssignedTo = AssignedTo,
-                                                CreatedBy = CreatedBy,
-                                                ischecked = int.TryParse(isCheckedText, out int isCheckedVal) ? isCheckedVal : 0,
-                    };
-
-                    //  AutoMapper mapping
-                    var document = _mapper.Map<ToDo>(dto);
-
-                    // extra safety
-                    //document.Attachment = null;
-
-                    docsToAdd.Add(document);
-                }
-
-                if (!docsToAdd.Any())
-                {
-                    response.errors.Add("No valid rows found.");
-                    return response;
-                }
-
-                foreach (var doc in docsToAdd)
-                    await _unitOfWork.ToDos.Add(doc);
-
-                response.acceptedObjects = docsToAdd;
-            }
-            catch (Exception ex)
-            {
-                Logs.Log(ex.ToString());
-
                 response.errors.Add(ex.Message);
 
                 if (ex.InnerException != null)
@@ -251,75 +162,55 @@ namespace MyErp.Core.Services
 
             try
             {
-                // You need to implement this like ValidateDTO.UserDTO(...)
                 var validList = await ValidateDTO.ToDoDTO(todoUpdated, true);
 
                 var existingTodo = await _unitOfWork.ToDos.GetFirst(a => a.Id == id);
-                if (existingTodo is null)
+
+                if (existingTodo == null)
                 {
                     response.errors.Add($"Cannot find ToDo with ID {id}.");
-
-                    if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
-                        response.errors.AddRange(validList.errors);
-
-                    response.rejectedObjects.AddRange(_mapper.Map<List<ToDo>>(validList.rejectedObjects));
                     return response;
                 }
 
-                if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
+                if (validList.acceptedObjects == null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update ToDo. Fix validation errors and try again.");
-
-                    if (validList.errors?.Any() == true)
-                        response.errors.AddRange(validList.errors);
-
-                    if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(_mapper.Map<List<ToDo>>(validList.rejectedObjects));
-
+                    response.errors.Add("No valid payload to update.");
                     return response;
                 }
 
                 var dto = validList.acceptedObjects[0];
 
-                // map dto -> entity
                 _mapper.Map(dto, existingTodo);
 
-                // handle LastCheckedAt based on ischecked
-                // If checked => set now; if unchecked => set old date (or null if you change the model)
                 if (dto.ischecked == 1)
                     existingTodo.LastCheckedAt = DateTime.UtcNow;
                 else
-                    existingTodo.LastCheckedAt = DateTime.MinValue; // better: null with DateTime?
+                    existingTodo.LastCheckedAt = null;
 
                 await _unitOfWork.ToDos.Update(existingTodo);
 
                 response.acceptedObjects.Add(existingTodo);
-
-                if (validList.rejectedObjects?.Any() == true)
-                    response.rejectedObjects.AddRange(_mapper.Map<List<ToDo>>(validList.rejectedObjects));
-
-                if (validList.errors?.Any() == true)
-                    response.errors.AddRange(validList.errors);
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
-                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
             }
 
             return response;
         }
 
-        //UPDATE STATUS ONLY
+        // UPDATE STATUS
         public async Task<MainResponse<ToDo>> UpdateStatus(int id, int status)
         {
             var response = new MainResponse<ToDo>();
 
             try
             {
-                var todo =
-                    await _unitOfWork.ToDos.GetFirst(t => t.Id == id);
+                var todo = await _unitOfWork.ToDos.GetFirst(t => t.Id == id);
 
                 if (todo == null)
                 {
@@ -329,13 +220,13 @@ namespace MyErp.Core.Services
 
                 todo.ischecked = (IsChecked)status;
 
-                // ✅ Only FINISHED updates check date
-                if (todo.ischecked == IsChecked.Closed || todo.ischecked == IsChecked.InProgress || todo.ischecked == IsChecked.todo)
+                if (status == 1)
                     todo.LastCheckedAt = DateTime.UtcNow;
+                else
+                    todo.LastCheckedAt = null;
 
                 await _unitOfWork.ToDos.Update(todo);
 
-                response.acceptedObjects ??= new List<ToDo>();
                 response.acceptedObjects.Add(todo);
             }
             catch (Exception ex)
@@ -352,48 +243,95 @@ namespace MyErp.Core.Services
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
-            var todo = await _unitOfWork.ToDos.DeletePhysical(p => p.Id == id);
-
-            if (todo == null)
-            {
-                string error = Errors.ObjectNotFoundWithId(id);
-                response.errors = new List<string> { error };
-                return response;
-            }
-
-            response.acceptedObjects = new List<ToDo> { todo.First() };
-            return response;
-        }
-
-        //toggle check/uncheck
-        public async Task<MainResponse<ToDo>> toggleCheck(int id, bool check)
-        {
-            var response = new MainResponse<ToDo>();
-
             try
             {
-                var existingTodo = await _unitOfWork.ToDos.GetFirst(a => a.Id == id);
-                if (existingTodo is null)
+                var todo = await _unitOfWork.ToDos.DeletePhysical(p => p.Id == id);
+
+                if (todo == null)
                 {
-                    response.errors.Add($"Cannot find ToDo with ID {id}.");
+                    response.errors.Add(Errors.ObjectNotFoundWithId(id));
                     return response;
                 }
 
-                if (check)
-                    existingTodo.LastCheckedAt = DateTime.UtcNow;
-                else
-                    existingTodo.LastCheckedAt = null;
-
-                existingTodo.ischecked = check ? (IsChecked)1 : (IsChecked)0;
-
-                await _unitOfWork.ToDos.Update(existingTodo);
-                response.acceptedObjects.Add(existingTodo);
+                response.acceptedObjects = new List<ToDo> { todo.First() };
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
-                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
+        }
+
+        // IMPORT FROM EXCEL
+        public async Task<MainResponse<ToDo>> ImportFromExcel(IFormFile excelFile)
+        {
+            var response = new MainResponse<ToDo>();
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    response.errors.Add("Excel file is empty.");
+                    return response;
+                }
+
+                var todosToAdd = new List<ToDo>();
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                {
+                    response.errors.Add("Worksheet not found.");
+                    return response;
+                }
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++)
+                {
+                    var title = worksheet.Cells[r, 1].Text?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var dto = new ToDoDTO
+                    {
+                        Title = title,
+                        Description = worksheet.Cells[r, 2].Text?.Trim(),
+                        AssignedTo = worksheet.Cells[r, 3].Text?.Trim(),
+                        CreatedBy = worksheet.Cells[r, 4].Text?.Trim(),
+                        ischecked = int.TryParse(worksheet.Cells[r, 5].Text, out int v) ? v : 0
+                    };
+
+                    var todo = _mapper.Map<ToDo>(dto);
+
+                    todosToAdd.Add(todo);
+                }
+
+                if (!todosToAdd.Any())
+                {
+                    response.errors.Add("No valid rows found.");
+                    return response;
+                }
+
+                await _unitOfWork.ToDos.Add(todosToAdd);
+
+                response.acceptedObjects = todosToAdd;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
             }
 
             return response;

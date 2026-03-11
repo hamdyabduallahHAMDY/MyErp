@@ -2,6 +2,7 @@
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Models;
+using System.Net.Sockets;
 using System.Reflection.Metadata.Ecma335;
 namespace MyErp.Core.Validation
 {
@@ -14,7 +15,7 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var customer in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where TaxRegistrationNumber = '{customer.TaxRegistrationNumber}'");
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where companyName = '{customer.TaxRegistrationNumber}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
@@ -22,7 +23,42 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
+                if (customer.AnyDesk.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+                if (customer.Name.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+                if (customer.POC.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+                if (customer.Phone.IsDigitsOrPlusOnly())
 
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
+                if (customer.Phone.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.rejectedObjects.Add(customer);
+                    hasError = true;
+                    continue;
+                }
                 if (hasError)
                 {
                     continue;
@@ -36,21 +72,43 @@ namespace MyErp.Core.Validation
             MainResponse<CalenderTaskDTO> response = new MainResponse<CalenderTaskDTO>();
             Errors<CalenderTaskDTO> err = new Errors<CalenderTaskDTO>();
             bool hasError = false;
-            foreach (var customer in insertDTO)
+            foreach (var calen in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{customer.Title}'");
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{calen.Title}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Title));
-                    response.rejectedObjects.Add(customer);
+                    response.errors.Add(err.ObjectErrorInvExist(calen.Title));
+                    response.rejectedObjects.Add(calen);
                     hasError = true;
                     continue;
+                }
+                if (calen.EndTime < DateTime.Now)
+                {
+                    response.errors.Add("EndTime Cant be before the current time ");
+                    response.rejectedObjects.Add(calen);
+                    hasError = true;
+                    continue;
+                }
+                if (calen.StartTime > calen.EndTime)
+                {
+                    response.errors.Add("startTime cant be after endtime ");
+                    response.rejectedObjects.Add(calen);
+                    hasError = true;
+                    continue;
+                }
+                if (!(calen.allday == "0" || calen.allday == "1"))
+                {
+                    response.errors.Add("Invalid allday status.");
+                    response.rejectedObjects.Add(calen);
+                    hasError = true;
+                    return response;
+
                 }
                 if (hasError)
                 {
                     continue;
                 }
-                response.acceptedObjects.Add(customer);
+                response.acceptedObjects.Add(calen);
             }
             return response;
         }
@@ -59,13 +117,43 @@ namespace MyErp.Core.Validation
             MainResponse<ToDoDTO> response = new MainResponse<ToDoDTO>();
             Errors<ToDoDTO> err = new Errors<ToDoDTO>();
             bool hasError = false;
-            foreach (var customer in insertDTO)
+            foreach (var todo in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from Customers where Name = '{customer.Title}'");
-                if (DBcustomer.Count() > 0 && !isupdate)
+                if (todo.Title.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Title));
-                    response.rejectedObjects.Add(customer);
+                    response.errors.Add(err.ObjectErrorInvExist(todo.Title));
+                    response.rejectedObjects.Add(todo);
+                    hasError = true;
+                    continue;
+                }
+                if (todo.Description.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(todo.Description));
+                    response.rejectedObjects.Add(todo);
+                    hasError = true;
+                    continue;
+                }
+                var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.AssignedTo}");
+                if (todo.AssignedTo.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add("Error using unexisted user ");
+                    response.rejectedObjects.Add(todo);
+                    hasError = true;
+                    continue;
+                }
+                var createdby = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.CreatedBy}");
+                if (todo.CreatedBy.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add("Error using unexisted user ");
+                    response.rejectedObjects.Add(todo);
+                    hasError = true;
+                    continue;
+                }
+                var DBtodo = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from ToDos where Title = '{todo.Title}'");
+                if (DBtodo.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(todo.Title));
+                    response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
                 }
@@ -74,7 +162,7 @@ namespace MyErp.Core.Validation
                 {
                     continue;
                 }
-                response.acceptedObjects.Add(customer);
+                response.acceptedObjects.Add(todo);
             }
             return response;
         }
@@ -83,22 +171,35 @@ namespace MyErp.Core.Validation
             MainResponse<FAQDTO> response = new MainResponse<FAQDTO>();
             Errors<FAQDTO> err = new Errors<FAQDTO>();
             bool hasError = false;
-            foreach (var customer in insertDTO)
+            foreach (var faq in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{customer.Error}'");
-                if (DBcustomer.Count() > 0 && !isupdate)
+                var DBfaq = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{faq.Error}'");
+                if (DBfaq.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Error));
-                    response.rejectedObjects.Add(customer);
+                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.rejectedObjects.Add(faq);
                     hasError = true;
                     continue;
                 }
-
+                if(faq.Error.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.rejectedObjects.Add(faq);
+                    hasError = true;
+                    continue;
+                }
+                if (faq.Details.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.rejectedObjects.Add(faq);
+                    hasError = true;
+                    continue;
+                }
                 if (hasError)
                 {
                     continue;
                 }
-                response.acceptedObjects.Add(customer);
+                response.acceptedObjects.Add(faq);
             }
             return response;
         }
@@ -114,38 +215,25 @@ namespace MyErp.Core.Validation
                     response.errors.Add(err.ObjectErrorInvExist(doc.Name));
                     response.rejectedObjects.Add(doc);
                     hasError = true;
+                   
+                }
+                if (doc.Name.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
+                    response.rejectedObjects.Add(doc);
+                    hasError = true;
+                }
+                if(doc.subject.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
+                    response.rejectedObjects.Add(doc);
+                    hasError = true;
                 }
                 if (hasError)
                 {
                     return response;
                 }
                 response.acceptedObjects.Add(doc);
-            }
-            return response;
-        }
-
-
-        public async static Task<MainResponse<UserDTO>> UserDTO(List<UserDTO> insertDTO, bool isupdate = false)
-        {
-            MainResponse<UserDTO> response = new MainResponse<UserDTO>();
-            Errors<UserDTO> err = new Errors<UserDTO>();
-            bool hasError = false;
-            foreach (var user in insertDTO)
-            {
-                var DBuser = await ADO.GetExecuteQueryMySql<Models.User>($"select * from Users  where Name = '{user.Name}'");
-                if (DBuser.Count() > 0 && !isupdate)
-                {
-                    response.errors.Add(err.ObjectErrorInvExist(user.Name));
-                    response.rejectedObjects.Add(user);
-                    hasError = true;
-                    continue;
-                }
-
-                if (hasError)
-                {
-                    continue;
-                }
-                response.acceptedObjects.Add(user);
             }
             return response;
         }
@@ -188,7 +276,20 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-
+                if (user.StartDate < user.EndDate)
+                {
+                    response.errors.Add("StartDate Cant be after EndDate ");
+                    response.rejectedObjects.Add(user);
+                    hasError = true;
+                    continue;
+                }
+                if (user.CompanyName.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(user.CompanyName));
+                    response.rejectedObjects.Add(user);
+                    hasError = true;
+                    continue;
+                }
                 if (hasError)
                 {
                     continue;
@@ -197,25 +298,65 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-        public async static Task<MainResponse<TicketDTO>> TicketDTO(TicketDTO user, bool isupdate = false)
+        public async static Task<MainResponse<TicketDTO>> TicketDTO(TicketDTO ticket, bool isupdate = false)
         {
             MainResponse<TicketDTO> response = new MainResponse<TicketDTO>();
             Errors<TicketDTO> err = new Errors<TicketDTO>();
             bool hasError = false;
             { 
-                var DBuser = await ADO.GetExecuteQueryMySql<Models.Ticket>($"select * from Tickets  where Description = '{user.Description}'");
+                if(ticket.Description.IsStringValidation() && !isupdate)
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.rejectedObjects.Add(ticket);
+                    hasError = true;
+                    return response;
+                }
+                var DBuser = await ADO.GetExecuteQueryMySql<Models.Ticket>($"select * from Tickets  where Description = '{ticket.Description}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(user.TaxRegistrationId.ToString()));
-                    response.rejectedObjects.Add(user);
+                    response.errors.Add(err.ObjectErrorInvExist(ticket.TaxRegistrationId.ToString()));
+                    response.rejectedObjects.Add(ticket);
                     hasError = true;
+                    return response;
+                }
+                if (!ticket.TaxRegistrationName.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.rejectedObjects.Add(ticket);
+                    hasError = true;
+                    return response;
+
+                }
+                if (ticket.Attachment.FileName.ToString().IsTicketFileDuplicate())
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.rejectedObjects.Add(ticket);
+                    hasError = true;
+                    return response;
+
+                }
+                if (ticket.TaxRegistrationName.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.rejectedObjects.Add(ticket);
+                    hasError = true;
+                    return response;
+
+                }
+                if (!Enum.IsDefined(typeof(Status), ticket.Status))
+                {
+                    response.errors.Add("Invalid ticket status.");
+                    response.rejectedObjects.Add(ticket);
+                    hasError = true;
+                    return response;
+
                 }
                 if (hasError)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(user.Description));
+                    response.errors.Add(err.ObjectErrorInvExist(ticket.Description));
                     return response;
                 }
-                response.acceptedObjects.Add(user);
+                response.acceptedObjects.Add(ticket);
             }
             return response;
         }

@@ -16,7 +16,9 @@ namespace MyErp.Core.Models
         public IsChecked ischecked { get; set; }
         public DateTime? LastCheckedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-       
+        public bool Daily { get; set; }
+
+
 
 
 
