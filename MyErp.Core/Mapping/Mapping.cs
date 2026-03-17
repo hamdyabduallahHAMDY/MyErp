@@ -142,6 +142,8 @@ namespace MyErp.Core.Mapping
 
             CreateMap<CalenderTask, CalenderTaskDTO>().ReverseMap();
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
+            CreateMap<Lead, LeadDTO>().ReverseMap();
+            CreateMap<Email, EmailDTO>().ReverseMap();
         }
     }
 

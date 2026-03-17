@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.Http;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -7,7 +8,7 @@ using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using OfficeOpenXml;
-using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 
 
 namespace MyErp.Core.Services
@@ -120,91 +121,71 @@ namespace MyErp.Core.Services
             }
         }
 
-        // Update Document
-        public async Task<MainResponse<Document>> updateDocument(int id, DocumentDTO documentUpdated)
+
+        //Update
+
+        public async Task<MainResponse<Document>> updateTicket(int id, DocumentDTO userUpdated, string apiRootPath)
         {
             var response = new MainResponse<Document>();
 
             try
             {
-                var validList = await ValidateDTO.DocumentDTO(documentUpdated, true);
+                var validList = await ValidateDTO.DocumentDTO(userUpdated, true);
 
-                var existingDocument =
-                    await _unitOfWork.Documents.GetFirst(a => a.Id == id);
-
-                if (existingDocument is null)
+                var existingTicket = await _unitOfWork.Documents.GetFirst(a => a.Id == id);
+                if (existingTicket is null)
                 {
-                    response.errors.Add($"Cannot find Document with ID {id}.");
-
-                    if (validList.errors?.Any() == true)
+                    response.errors.Add($"Cannot find Ticket with ID {id}.");
+                    if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
                         response.errors.AddRange(validList.errors);
 
                     if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(
-                            _mapper.Map<List<Document>>(validList.rejectedObjects));
+                        response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
 
                     return response;
                 }
 
-                if (validList.acceptedObjects is null ||
-                    validList.acceptedObjects.Count == 0)
+                if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update Document. Fix validation errors and try again.");
-
-                    if (validList.errors?.Any() == true)
-                        response.errors.AddRange(validList.errors);
+                    response.errors.Add("No valid payload to update Ticket. Fix validation errors and try again.");
+                    if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
 
                     if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(
-                            _mapper.Map<List<Document>>(validList.rejectedObjects));
+                        response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
 
                     return response;
                 }
 
                 var dto = validList.acceptedObjects[0];
 
-                // ===== FILE HANDLING =====
-                if (documentUpdated.Attachment != null && documentUpdated.Attachment.Length > 0)
-                {
-                    string uploadsFolder = Path.Combine(documentUpdated.Attachment.FileName, "Upload_Document");
+                _mapper.Map(dto, existingTicket);
 
+                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Document");
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
 
-                    // create unique filename
-                    string uniqueFileName = documentUpdated.Attachment.FileName;
+                    string originalName = Path.GetFileName(dto.Attachment.FileName);
+                    string fullPath = Path.Combine(uploadsFolder, originalName);
 
-                    string fullPath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    // save new file
                     using (var stream = new FileStream(fullPath, FileMode.Create))
                     {
-                        await documentUpdated.Attachment.CopyToAsync(stream);
+                        await dto.Attachment.CopyToAsync(stream);
                     }
 
-                    // delete old file if exists
-                    if (!string.IsNullOrEmpty(existingDocument.Attachment))
-                    {
-                        string oldFilePath = Path.Combine(documentUpdated.Attachment.FileName, "Upload_Document", existingDocument.Attachment);
+                    existingTicket.Attachment = dto.Attachment.FileName;
 
-                        if (File.Exists(oldFilePath))
-                            File.Delete(oldFilePath);
-                    }
-
-                    // update DB path
-                    existingDocument.Attachment = uniqueFileName;
                 }
 
-                // ===== UPDATE OTHER FIELDS =====
-                _mapper.Map(dto, existingDocument);
 
-                await _unitOfWork.Documents.Update(existingDocument);
+                await _unitOfWork.Documents.Update(existingTicket);
 
-                response.acceptedObjects.Add(existingDocument);
+                response.acceptedObjects ??= new List<Document>();
+                response.acceptedObjects.Add(existingTicket);
 
                 if (validList.rejectedObjects?.Any() == true)
-                    response.rejectedObjects.AddRange(
-                        _mapper.Map<List<Document>>(validList.rejectedObjects));
+                    response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
 
                 if (validList.errors?.Any() == true)
                     response.errors.AddRange(validList.errors);
@@ -213,13 +194,12 @@ namespace MyErp.Core.Services
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
-
-                if (ex.InnerException != null)
-                    response.errors.Add(ex.InnerException.Message);
+                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
             }
 
             return response;
         }
+
 
 
 

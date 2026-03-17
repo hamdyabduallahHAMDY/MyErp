@@ -86,6 +86,28 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
-        
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await ToDoServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
+
+        [HttpDelete("deleteGroup")]
+        public async Task<IActionResult> DeleteGroup(List<int> ints)
+        {
+            var result = await ToDoServices.deleteGroup(ints);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
+
+        [HttpGet("Get by Assgined To")]
+        public async Task<IActionResult> GetbyAssignedTo(string assginedto)
+        {
+            var result = await ToDoServices.GetByAssignedTo(assginedto);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
     }
 }

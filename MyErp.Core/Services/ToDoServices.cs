@@ -42,12 +42,13 @@ namespace MyErp.Core.Services
 
                 foreach (var todo in todos)
                 {
-                    if (todo.Daily) { 
-                    if ((today - todo.LastCheckedAt.Value).TotalMinutes >=2)
+                    if (todo.Daily)
                     {
-                        todo.ischecked = (IsChecked)0;
-                        await _unitOfWork.ToDos.Update(todo);
-                    }
+                        if ((today - todo.LastCheckedAt.Value).TotalMinutes >= 2)
+                        {
+                            todo.ischecked = (IsChecked)0;
+                            await _unitOfWork.ToDos.Update(todo);
+                        }
                     }
                 }
 
@@ -132,7 +133,7 @@ namespace MyErp.Core.Services
 
                 var todoList = _mapper.Map<List<ToDo>>(validList.acceptedObjects);
                 var rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
-                foreach(var todo in todos)
+                foreach (var todo in todos)
                 {
                     todo.LastCheckedAt = DateTime.UtcNow;
                 }
@@ -147,6 +148,79 @@ namespace MyErp.Core.Services
                     response.rejectedObjects = rejectedList;
                     response.errors = validList.errors ?? new List<string>();
                 }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
+        }
+
+        // IMPORT FROM EXCEL
+        public async Task<MainResponse<ToDo>> ImportFromExcel(IFormFile excelFile)
+        {
+            var response = new MainResponse<ToDo>();
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    response.errors.Add("Excel file is empty.");
+                    return response;
+                }
+
+                var todosToAdd = new List<ToDo>();
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                {
+                    response.errors.Add("Worksheet not found.");
+                    return response;
+                }
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++)
+                {
+                    var title = worksheet.Cells[r, 1].Text?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var dto = new ToDoDTO
+                    {
+                        Title = title,
+                        Description = worksheet.Cells[r, 2].Text?.Trim(),
+                        AssignedTo = worksheet.Cells[r, 3].Text?.Trim(),
+                        CreatedBy = worksheet.Cells[r, 4].Text?.Trim(),
+                        ischecked = int.TryParse(worksheet.Cells[r, 5].Text, out int v) ? v : 0
+                    };
+
+                    var todo = _mapper.Map<ToDo>(dto);
+
+                    todosToAdd.Add(todo);
+                }
+
+                if (!todosToAdd.Any())
+                {
+                    response.errors.Add("No valid rows found.");
+                    return response;
+                }
+
+                await _unitOfWork.ToDos.Add(todosToAdd);
+
+                response.acceptedObjects = todosToAdd;
             }
             catch (Exception ex)
             {
@@ -269,76 +343,78 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        // IMPORT FROM EXCEL
-        public async Task<MainResponse<ToDo>> ImportFromExcel(IFormFile excelFile)
+        // DELETE ALL
+        public async Task<MainResponse<ToDo>> deleteAll()
         {
-            var response = new MainResponse<ToDo>();
-
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
             try
             {
-                if (excelFile == null || excelFile.Length == 0)
+                var todos = await _unitOfWork.ToDos.GetAll();
+                if (todos == null || !todos.Any())
                 {
-                    response.errors.Add("Excel file is empty.");
+                    response.errors.Add("There is no even Any ToDos (:");
                     return response;
                 }
-
-                var todosToAdd = new List<ToDo>();
-
-                using var ms = new MemoryStream();
-                await excelFile.CopyToAsync(ms);
-                ms.Position = 0;
-
-                using var package = new ExcelPackage(ms);
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-
-                if (worksheet == null)
-                {
-                    response.errors.Add("Worksheet not found.");
-                    return response;
-                }
-
-                int rows = worksheet.Dimension?.Rows ?? 0;
-
-                for (int r = 2; r <= rows; r++)
-                {
-                    var title = worksheet.Cells[r, 1].Text?.Trim();
-
-                    if (string.IsNullOrWhiteSpace(title))
-                        continue;
-
-                    var dto = new ToDoDTO
-                    {
-                        Title = title,
-                        Description = worksheet.Cells[r, 2].Text?.Trim(),
-                        AssignedTo = worksheet.Cells[r, 3].Text?.Trim(),
-                        CreatedBy = worksheet.Cells[r, 4].Text?.Trim(),
-                        ischecked = int.TryParse(worksheet.Cells[r, 5].Text, out int v) ? v : 0
-                    };
-
-                    var todo = _mapper.Map<ToDo>(dto);
-
-                    todosToAdd.Add(todo);
-                }
-
-                if (!todosToAdd.Any())
-                {
-                    response.errors.Add("No valid rows found.");
-                    return response;
-                }
-
-                await _unitOfWork.ToDos.Add(todosToAdd);
-
-                response.acceptedObjects = todosToAdd;
+                var deletedTodos = await _unitOfWork.ToDos.DeletePhysical(p => true);
+                response.acceptedObjects = deletedTodos.ToList();
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
-
-                if (ex.InnerException != null)
-                    response.errors.Add(ex.InnerException.Message);
             }
+            return response;
 
+        }
+
+        // DELETE GROUP
+        public async Task<MainResponse<ToDo>> deleteGroup(List<int> ids)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var deletedTodos = await _unitOfWork.ToDos.DeletePhysical(p => p.Id == id);
+                    if (deletedTodos == null || !deletedTodos.Any())
+                    {
+                        response.errors?.Add($"id = {id} not found");
+                        return response;
+                    }
+                    else
+                    {
+                        response.acceptedObjects = deletedTodos.ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+            return response;
+        }
+
+        // GET BY ASSIGNED TO
+        public async Task<MainResponse<ToDo>> GetByAssignedTo(string assignedTo)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            try
+            {
+                var todos = await _unitOfWork.ToDos.GetAll(a => a.AssignedTo == assignedTo);
+                if (todos == null || !todos.Any())
+                {
+                    response.errors?.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+                response.acceptedObjects = todos.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
             return response;
         }
     }

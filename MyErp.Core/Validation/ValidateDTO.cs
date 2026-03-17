@@ -23,36 +23,35 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-                if (customer.AnyDesk.IsDigitsOrPlusOnly())
+                if (!customer.AnyDesk.IsDigitsOrPlusOnly())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
-                if (customer.Name.IsStringValidation())
+                if (!customer.Name.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
-                if (customer.POC.IsDigitsOrPlusOnly())
+                if (!customer.POC.IsDigitsOrPlusOnly())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
-                if (customer.Phone.IsDigitsOrPlusOnly())
-
+                if (!customer.Phone.IsDigitsOrPlusOnly())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
-                if (customer.Phone.IsDigitsOrPlusOnly())
+                if (!customer.Phone.IsDigitsOrPlusOnly())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(customer.Name));
                     response.rejectedObjects.Add(customer);
@@ -136,22 +135,22 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-                var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from AspNetUsers where Id = {todo.AssignedTo}");
-                if (todo.AssignedTo.IsDigitsOrPlusOnly())
-                {
-                    response.errors.Add("Error using unexisted user ");
-                    response.rejectedObjects.Add(todo);
-                    hasError = true;
-                    continue;
-                }
-                var createdby = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.CreatedBy}");
-                if (todo.CreatedBy.IsDigitsOrPlusOnly())
-                {
-                    response.errors.Add("Error using unexisted user ");
-                    response.rejectedObjects.Add(todo);
-                    hasError = true;
-                    continue;
-                }
+                //var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from AspNetUsers where Id = '{todo.AssignedTo}'");
+                //if (!todo.AssignedTo.IsDigitsOrPlusOnly())
+                //{
+                //    response.errors.Add("Error using unexisted user ");
+                //    response.rejectedObjects.Add(todo);
+                //    hasError = true;
+                //    continue;
+                //}
+                //var createdby = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.CreatedBy}");
+                //if (!todo.CreatedBy.IsDigitsOrPlusOnly())
+                //{
+                //    response.errors.Add("Error using unexisted user ");
+                //    response.rejectedObjects.Add(todo);
+                //    hasError = true;
+                //    continue;
+                //}
                 var DBtodo = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from ToDos where Title = '{todo.Title}'");
                 if (DBtodo.Count() > 0 && !isupdate)
                 {
@@ -184,14 +183,14 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-                if(faq.Error.IsStringValidation())
+                if (!faq.Error.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(faq.Error));
                     response.rejectedObjects.Add(faq);
                     hasError = true;
                     continue;
                 }
-                if (faq.Details.IsStringValidation())
+                if (!faq.Details.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(faq.Error));
                     response.rejectedObjects.Add(faq);
@@ -218,7 +217,7 @@ namespace MyErp.Core.Validation
                     response.errors.Add(err.ObjectErrorInvExist(doc.Name));
                     response.rejectedObjects.Add(doc);
                     hasError = true;
-                   
+
                 }
                 if (!doc.Name.IsStringValidation())
                 {
@@ -226,7 +225,7 @@ namespace MyErp.Core.Validation
                     response.rejectedObjects.Add(doc);
                     hasError = true;
                 }
-                if(!doc.subject.IsStringValidation())
+                if (!doc.subject.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectErrorInvExist(doc.Name));
                     response.rejectedObjects.Add(doc);
@@ -286,10 +285,10 @@ namespace MyErp.Core.Validation
                     hasError = true;
                     continue;
                 }
-                if (user.CompanyName.IsStringValidation())
+                if (!user.CompanyName.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(user.CompanyName));
-                    response.rejectedObjects.Add(user);
+                    response.errors?.Add(err.ObjectErrorInvExist(user.CompanyName));
+                    response.rejectedObjects?.Add(user);
                     hasError = true;
                     continue;
                 }
@@ -306,11 +305,11 @@ namespace MyErp.Core.Validation
             MainResponse<TicketDTO> response = new MainResponse<TicketDTO>();
             Errors<TicketDTO> err = new Errors<TicketDTO>();
             bool hasError = false;
-            { 
-                if(ticket.Description.IsStringValidation() && !isupdate)
+            {
+                if (!ticket.Description.IsStringValidation() && !isupdate)
                 {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
-                    response.rejectedObjects.Add(ticket);
+                    response.errors?.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.rejectedObjects?.Add(ticket);
                     hasError = true;
                     return response;
                 }
@@ -330,15 +329,15 @@ namespace MyErp.Core.Validation
                     return response;
 
                 }
-                if (ticket.Attachment.FileName.ToString().IsTicketFileDuplicate())
-                {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
-                    response.rejectedObjects.Add(ticket);
-                    hasError = true;
-                    return response;
+                //if (ticket.Attachment.FileName.ToString().IsTicketFileDuplicate())
+                //{
+                //    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                //    response.rejectedObjects.Add(ticket);
+                //    hasError = true;
+                //    return response;
 
-                }
-                if (ticket.TaxRegistrationName.IsDigitsOrPlusOnly())
+                //}
+                if (!ticket.TaxRegistrationName.IsStringValidation())
                 {
                     response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
                     response.rejectedObjects.Add(ticket);
@@ -363,6 +362,81 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-    }
+        public async static Task<MainResponse<LeadDTO>> LeadDTO(LeadDTO lead, bool isupdate = false)
+        {
+            MainResponse<LeadDTO> response = new MainResponse<LeadDTO>();
+            Errors<LeadDTO> err = new Errors<LeadDTO>();
+            bool hasError = false;
+            {
+                var DBuser = await ADO.GetExecuteQueryMySql<Models.Lead>($"select * from Leads  where Name = '{lead.Name}'");
+                if (DBuser.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(lead.Name));
+                    response.rejectedObjects.Add(lead);
+                    hasError = true;
+                    return response;
+                }
+                if (!lead.Name.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(lead.Name));
+                    response.rejectedObjects.Add(lead);
+                    hasError = true;
+                    return response;
+                }
+                if (!lead.PhoneNo.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(lead.Name));
+                    response.rejectedObjects.Add(lead);
+                    hasError = true;
+                    return response;
+                }
+                if (!Enum.IsDefined(typeof(LeadStatus), lead.Status))
+                {
+                    response.errors.Add("Invalid lead status.");
+                    response.rejectedObjects.Add(lead);
+                    hasError = true;
+                    return response;
+                }
+                if (hasError)
+                {
+                    return response;
+                }
+                response.acceptedObjects.Add(lead);
+            }
+            return response;
 
+
+
+
+        }
+        public async static Task<MainResponse<EmailDTO>> EmailDTO(EmailDTO email, bool isupdate = false)
+        {
+            MainResponse<EmailDTO> response = new MainResponse<EmailDTO>();
+            Errors<EmailDTO> err = new Errors<EmailDTO>();
+            bool hasError = false;
+            
+                var DBemail = await ADO.GetExecuteQueryMySql<Models.Email>($"select * from Emails where subject = '{email.Subject}'");
+                if (DBemail.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(email.Subject));
+                    response.rejectedObjects.Add(email);
+                    hasError = true;
+                    
+                }
+                if (!email.Subject.IsStringValidation())
+                {
+                    response.errors.Add(err.ObjectErrorInvExist(email.Subject));
+                    response.rejectedObjects.Add(email);
+                    hasError = true;
+                }
+                if (hasError)
+                {
+
+                }
+                response.acceptedObjects.Add(email);
+            
+            return response;
+        }
+
+    }
 }
