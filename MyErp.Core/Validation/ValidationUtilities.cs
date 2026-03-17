@@ -320,7 +320,25 @@ namespace MyErp.Core.Validation
             return !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, @"^\+?\d+$");
         }
 
+        public static bool IsStringValidation(this string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
 
+            return Regex.IsMatch(input, @"^[a-zA-Z0-9 ]+$");
+        }
+        public static bool IsTicketFileDuplicate(this string? fileName)
+        {
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "upload_tickets");
+
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var filePath = Path.Combine(folderPath, fileName);
+
+            return File.Exists(filePath);
+        }
+      
         //public static bool CheckVATCategoryCode(string vatCategoryCode)
         //{
         //    if (Enum.TryParse<VatCategoryCode>(vatCategoryCode, true, out _))

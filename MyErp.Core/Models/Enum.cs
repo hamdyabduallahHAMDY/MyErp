@@ -14,16 +14,42 @@ namespace MyErp.Core.Models
         }
         public enum Status
         {
-            Open = 0,
+            todo = 0,
             InProgress = 1,
-            Closed = 2
-        }
-        public enum IsChecked
-        {
-           UnChecked = 0,
-           Checked = 1 ,
-           inProgress = 2
-        }
+            Closed = 2,
+            archived = 3
+    }
+     public enum IsChecked
+     {
+        todo = 0,
+        InProgress = 1,
+        Closed = 2,
+        archived = 3
+     }
+
+    public enum LeadStatus
+    {
+        Cancel = 0,
+        NotInterested = 1,
+        Interested = 2,
+        notresponding = 3,
+        FollowUp = 4,
+        Duplicated = 5,
+        NotResponding = 6
+    }
+
+    public enum EG_KSA
+    {
+        Egypt = 0,
+        KSA = 1
+    
+    
+    }
+    public enum WhaOrEmail
+    {
+        WhatsApp = 0,
+        Email = 1
+    }
 
 
 }

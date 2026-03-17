@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
+using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using Mysqlx.Crud;
 using Org.BouncyCastle.Utilities;
@@ -28,6 +29,9 @@ namespace MyErp.EF.Repositories
         public ICmd<Document> Documents { get; private set; }
         public ICmd<FAQ> FAQs { get; private set; }
         public ICmd<ToDo> ToDos { get; private set; }
+        public ICmd<Lead> Leads { get; private set; }
+        public ICmd<CalenderTask> CalenderTasks { get; private set; }
+        public ICmd<Email> Emails { get; private set; }
         //public ICmd<applicationUSER> applicationUSERs { get; private set; }
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -48,6 +52,11 @@ namespace MyErp.EF.Repositories
             FAQs = new Cmd<FAQ>(_context);
 
             ToDos = new Cmd<ToDo>(_context);
+
+            CalenderTasks = new Cmd<CalenderTask>(_context);
+
+            Leads = new Cmd<Lead>(_context);
+            Emails = new Cmd<Email>(_context);
             //applicationUSERs = new Cmd<applicationUSER>(_context);
 
         }

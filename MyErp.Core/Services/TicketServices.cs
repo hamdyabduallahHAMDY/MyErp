@@ -9,6 +9,7 @@ using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
@@ -52,7 +53,25 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Ticket> { user };
             return response;
         }
-
+        public async Task<MainResponse<TickectinvioceDTO>> getTicketByTaxRegistrationId(int taxRegistrationId)
+        {
+            MainResponse<TickectinvioceDTO> response = new MainResponse<TickectinvioceDTO>();
+            var tickets = await _unitOfWork.Tickets.GetBy(x => x.TaxRegistrationId == taxRegistrationId);
+            if (tickets == null || !tickets.Any())
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+            response.acceptedObjects = tickets
+                .Select(x => new TickectinvioceDTO
+                {
+                    Attachment = x.Attachment,
+                    Description = x.Description,
+                    Status = x.Status.ToString()
+                })
+                .ToList(); return response;
+        }
         public async Task<MainResponse<Ticket>> getTicketByStatus(int status)
         {
             MainResponse<Ticket> response = new MainResponse<Ticket>();
@@ -149,57 +168,52 @@ namespace MyErp.Core.Services
             MainResponse<Ticket> response = new MainResponse<Ticket>();
             try
             {
-
-
-                response.acceptedObjects = new List<Ticket>();
-
+                var validList = await ValidateDTO.TicketDTO(dto);
                 string savedFilePath = null;
 
-                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                List<Ticket> acceptedTicket = _mapper.Map<List<Ticket>>(validList.acceptedObjects);
+                List<Ticket> rejectedTicket = _mapper.Map<List<Ticket>>(validList.rejectedObjects);
+
+                if (acceptedTicket != null && acceptedTicket.Count > 0)
                 {
-                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
-
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
-
-                    string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
-
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    if (dto.Attachment != null && dto.Attachment.Length > 0)
                     {
-                        await dto.Attachment.CopyToAsync(stream);
+                        string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
+
+                        if (!Directory.Exists(uploadsFolder))
+                            Directory.CreateDirectory(uploadsFolder);
+
+                        string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
+
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await dto.Attachment.CopyToAsync(stream);
+                        }
+
+                        savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
                     }
 
-                    savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
+                    await _unitOfWork.Tickets.Add(acceptedTicket);
+                    response.acceptedObjects = acceptedTicket;
                 }
-
-                Ticket ticket = new Ticket
+                if (rejectedTicket != null && rejectedTicket.Count() > 0) 
                 {
-                    TaxRegistrationId = dto.TaxRegistrationId,
-                    Attachment = dto.Attachment.FileName,
-                    TaxRegistrationName = dto.TaxRegistrationName,
-                    Description = dto.Description,
-                    Status = (Status)dto.Status
-                }; 
-
-                await _unitOfWork.Tickets.Add(ticket);
-                //await _unitOfWork.sav();
-
-                response.acceptedObjects.Add(ticket);
-
+                    List<String> err = validList.errors;
+                    response.rejectedObjects = rejectedTicket;
+                    response.errors = err;
+                }
                 return response;
             }
+
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-
                 response.errors = new List<string> { ex.Message };
-
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);
-
                 return response;
             }
-        }
+        }   
 
         public async Task<MainResponse<Ticket>> UpdateStatus(int id, int status)
         {

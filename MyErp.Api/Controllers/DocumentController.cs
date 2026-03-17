@@ -55,7 +55,9 @@ namespace MyErp.Api.Controllers
             int id,
             [FromForm] DocumentDTO documentUpdated)
         {
-            var result = await DocumentServices.updateDocument(id, documentUpdated);
+            var apiRootPath = Directory.GetCurrentDirectory();
+
+            var result = await DocumentServices.updateTicket(id, documentUpdated, apiRootPath);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpPut");

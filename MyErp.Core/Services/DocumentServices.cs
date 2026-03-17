@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.Http;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -7,9 +8,7 @@ using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using OfficeOpenXml;
-using Microsoft.AspNetCore.Http;
-
-
+using System.Collections.Generic;
 
 
 namespace MyErp.Core.Services
@@ -61,9 +60,7 @@ namespace MyErp.Core.Services
         }
 
         // Add Document
-        public async Task<MainResponse<Document>> addDocument(
-          DocumentDTO dto,
-          string apiRootPath)
+        public async Task<MainResponse<Document>> addDocument(DocumentDTO dto,string apiRootPath)
         {
             MainResponse<Document> response = new MainResponse<Document>();
 
@@ -100,7 +97,8 @@ namespace MyErp.Core.Services
                 Document document = new Document
                 {
                     Name = dto.Name,
-                    Attachment = dto.Attachment.FileName
+                    Attachment = dto.Attachment.FileName,
+                    subject = dto.subject
                 };
 
                 await _unitOfWork.Documents.Add(document);
@@ -122,6 +120,91 @@ namespace MyErp.Core.Services
                 return response;
             }
         }
+
+
+        //Update
+
+        public async Task<MainResponse<Document>> updateTicket(int id, DocumentDTO userUpdated, string apiRootPath)
+        {
+            var response = new MainResponse<Document>();
+
+            try
+            {
+                var validList = await ValidateDTO.DocumentDTO(userUpdated, true);
+
+                var existingTicket = await _unitOfWork.Documents.GetFirst(a => a.Id == id);
+                if (existingTicket is null)
+                {
+                    response.errors.Add($"Cannot find Ticket with ID {id}.");
+                    if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
+                        response.errors.AddRange(validList.errors);
+
+                    if (validList.rejectedObjects?.Any() == true)
+                        response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
+
+                    return response;
+                }
+
+                if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
+                {
+                    response.errors.Add("No valid payload to update Ticket. Fix validation errors and try again.");
+                    if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
+
+                    if (validList.rejectedObjects?.Any() == true)
+                        response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
+
+                    return response;
+                }
+
+                var dto = validList.acceptedObjects[0];
+
+                _mapper.Map(dto, existingTicket);
+
+                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Document");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    string originalName = Path.GetFileName(dto.Attachment.FileName);
+                    string fullPath = Path.Combine(uploadsFolder, originalName);
+
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        await dto.Attachment.CopyToAsync(stream);
+                    }
+
+                    existingTicket.Attachment = dto.Attachment.FileName;
+
+                }
+
+
+                await _unitOfWork.Documents.Update(existingTicket);
+
+                response.acceptedObjects ??= new List<Document>();
+                response.acceptedObjects.Add(existingTicket);
+
+                if (validList.rejectedObjects?.Any() == true)
+                    response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
+
+                if (validList.errors?.Any() == true)
+                    response.errors.AddRange(validList.errors);
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
+        }
+
+
+
+
+
+
 
         //Add Excel Document
         public async Task<MainResponse<Document>> ImportFromExcel(IFormFile excelFile)
@@ -156,7 +239,7 @@ namespace MyErp.Core.Services
                 for (int r = 2; r <= rows; r++) // skip header
                 {
                     var name = worksheet.Cells[r, 1].Text?.Trim();
-
+                    var subject = worksheet.Cells[r, 2].Text?.Trim();
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
 
@@ -164,6 +247,7 @@ namespace MyErp.Core.Services
                     var dto = new DocumentDTO
                     {
                         Name = name,
+                        subject = subject,
                         Attachment = null
                     };
 
@@ -193,75 +277,6 @@ namespace MyErp.Core.Services
 
                 response.errors.Add(ex.Message);
 
-                if (ex.InnerException != null)
-                    response.errors.Add(ex.InnerException.Message);
-            }
-
-            return response;
-        }
-
-
-
-        // Update Document
-        public async Task<MainResponse<Document>> updateDocument(int id, DocumentDTO documentUpdated)
-        {
-            var response = new MainResponse<Document>();
-
-            try
-            {
-                var validList = await ValidateDTO.DocumentDTO(documentUpdated, true);
-
-                var existingDocument =
-                    await _unitOfWork.Documents.GetFirst(a => a.Id == id);
-
-                if (existingDocument is null)
-                {
-                    response.errors.Add($"Cannot find Document with ID {id}.");
-
-                    if (validList.errors?.Any() == true)
-                        response.errors.AddRange(validList.errors);
-
-                    if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(
-                            _mapper.Map<List<Document>>(validList.rejectedObjects));
-
-                    return response;
-                }
-
-                if (validList.acceptedObjects is null ||
-                    validList.acceptedObjects.Count == 0)
-                {
-                    response.errors.Add("No valid payload to update Document. Fix validation errors and try again.");
-
-                    if (validList.errors?.Any() == true)
-                        response.errors.AddRange(validList.errors);
-
-                    if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(
-                            _mapper.Map<List<Document>>(validList.rejectedObjects));
-
-                    return response;
-                }
-
-                var dto = validList.acceptedObjects[0];
-
-                _mapper.Map(dto, existingDocument);
-
-                await _unitOfWork.Documents.Update(existingDocument);
-
-                response.acceptedObjects.Add(existingDocument);
-
-                if (validList.rejectedObjects?.Any() == true)
-                    response.rejectedObjects.AddRange(
-                        _mapper.Map<List<Document>>(validList.rejectedObjects));
-
-                if (validList.errors?.Any() == true)
-                    response.errors.AddRange(validList.errors);
-            }
-            catch (Exception ex)
-            {
-                Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);
             }

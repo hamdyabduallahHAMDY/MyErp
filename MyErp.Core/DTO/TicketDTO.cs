@@ -15,4 +15,12 @@ namespace MyErp.Core.DTO
         public int Status { get; set; }
         public IFormFile Attachment { get; set; }
     }
+
+
+    public class TickectinvioceDTO
+    {
+        public string Status { get; set; }
+        public string Attachment { get; set; }
+        public string Description { get; set; }
+    }
 }

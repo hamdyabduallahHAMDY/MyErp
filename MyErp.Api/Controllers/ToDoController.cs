@@ -22,11 +22,10 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             ToDoServices = new ToDoServices(unitOfWork, _mapper);
         }
-
         [HttpGet("getAll")]
         public async Task<IActionResult> GetToDoList()
         {
-            var result = await ToDoServices.getToDoList();
+            var result = await ToDoServices.GetAll();
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
@@ -71,6 +70,14 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+        [HttpPost("addFromExcel")]
+        public async Task<IActionResult> ImportFromExcel(IFormFile file)
+        {
+            var result = await ToDoServices.ImportFromExcel(file);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
+            return resultWithStatusCode;
+        }
+
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteToDo(int id)
         {
@@ -79,13 +86,27 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
-        // OPTIONAL (recommended): toggle check/uncheck for daily tasks
-        // Expects a boolean: true = check now, false = uncheck
-        [HttpPut("toggleCheckById")]
-        public async Task<IActionResult> ToggleCheck(int id, [FromQuery] bool check)
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
         {
-            var result = await ToDoServices.toggleCheck(id, check);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
+            var result = await ToDoServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
+
+        [HttpDelete("deleteGroup")]
+        public async Task<IActionResult> DeleteGroup(List<int> ints)
+        {
+            var result = await ToDoServices.deleteGroup(ints);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
+
+        [HttpGet("Get by Assgined To")]
+        public async Task<IActionResult> GetbyAssignedTo(string assginedto)
+        {
+            var result = await ToDoServices.GetByAssignedTo(assginedto);
+            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
     }

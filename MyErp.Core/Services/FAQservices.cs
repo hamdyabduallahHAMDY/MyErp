@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.Http;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +101,86 @@ namespace MyErp.Core.Services
                 return response;
             }
         }
+
+        //addFAQ BY Excel
+        public async Task<MainResponse<FAQ>> ImportFromExcel(IFormFile excelFile)
+        {
+            var response = new MainResponse<FAQ>();
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    response.errors.Add("Excel file is empty.");
+                    return response;
+                }
+
+                var docsToAdd = new List<FAQ>();
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                {
+                    response.errors.Add("Worksheet not found.");
+                    return response;
+                }
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++) // skip header
+                {
+                    var error = worksheet.Cells[r, 1].Text?.Trim();
+                    var details = worksheet.Cells[r, 2].Text?.Trim();
+                    
+
+                    if (string.IsNullOrWhiteSpace(error))
+                        continue;
+
+                    //  DTO creation
+                    var dto = new FAQDTO
+                    {
+                        Error = error,
+                        Details = details
+                    };
+
+                    //  AutoMapper mapping
+                    var document = _mapper.Map<FAQ>(dto);
+
+                    // extra safety
+                    //document.Attachment = null;
+
+                    docsToAdd.Add(document);
+                }
+
+                if (!docsToAdd.Any())
+                {
+                    response.errors.Add("No valid rows found.");
+                    return response;
+                }
+
+                foreach (var doc in docsToAdd)
+                    await _unitOfWork.FAQs.Add(doc);
+
+                response.acceptedObjects = docsToAdd;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+
+                response.errors.Add(ex.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
+        }
+
 
         // ==============================
         // UPDATE FAQ

@@ -1,12 +1,14 @@
 ﻿using AutoMapper;
 using Azure;
 using Logger;
+using Microsoft.AspNetCore.Http;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +101,92 @@ namespace MyErp.Core.Services
             }
             return response;
         }
+
+        public async Task<MainResponse<Customer>> ImportFromExcel(IFormFile excelFile)
+        {
+            var response = new MainResponse<Customer>();
+
+            try
+            {
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    response.errors.Add("Excel file is empty.");
+                    return response;
+                }
+
+                var docsToAdd = new List<Customer>();
+
+                using var ms = new MemoryStream();
+                await excelFile.CopyToAsync(ms);
+                ms.Position = 0;
+
+                using var package = new ExcelPackage(ms);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+                if (worksheet == null)
+                {
+                    response.errors.Add("Worksheet not found.");
+                    return response;
+                }
+
+                int rows = worksheet.Dimension?.Rows ?? 0;
+
+                for (int r = 2; r <= rows; r++) // skip header
+                {
+                    var name = worksheet.Cells[r, 1].Text?.Trim();
+                    var TaxRegistrationNumber = worksheet.Cells[r, 2].Text?.Trim();
+                    var CompanyName = worksheet.Cells[r, 3].Text?.Trim();
+                    var Phone = worksheet.Cells[r, 4].Text?.Trim();
+                    var AnyDesk = worksheet.Cells[r, 5].Text?.Trim();
+                    var POC = worksheet.Cells[r, 5].Text?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(name))
+                        continue;
+
+                    //  DTO creation
+                    var dto = new CustomerDTO
+                    {
+                        Name = name,
+                        TaxRegistrationNumber = TaxRegistrationNumber,
+                        CompanyName = CompanyName,
+                        AnyDesk = AnyDesk,
+                        Phone = Phone,
+                        POC = POC,
+                    };
+
+                    //  AutoMapper mapping
+                    var document = _mapper.Map<Customer>(dto);
+
+                    // extra safety
+                    //document.Attachment = null;
+
+                    docsToAdd.Add(document);
+                }
+
+                if (!docsToAdd.Any())
+                {
+                    response.errors.Add("No valid rows found.");
+                    return response;
+                }
+
+                foreach (var doc in docsToAdd)
+                    await _unitOfWork.Customers.Add(doc);
+
+                response.acceptedObjects = docsToAdd;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+
+                response.errors.Add(ex.Message);
+
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+            }
+
+            return response;
+        }
+
 
         public async Task<MainResponse<Customer>> addCustomer(List<CustomerDTO> customer)
         {
