@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
@@ -6,6 +7,7 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using System.Text.Json;
 
 namespace MyErp.Api.Controllers
 {
@@ -27,7 +29,33 @@ namespace MyErp.Api.Controllers
         [HttpGet("getAll")]
         public async Task<IActionResult> GetLeadList()
         {
-            var result = await LeadServices.GetAllLeads();
+            var currentUser = User.Identity?.Name;
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            List<string> allowedUsers = new List<string>();
+
+            if (!string.IsNullOrEmpty(rightsJson))
+            {
+                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+                if (rights?.allowance != null)
+                    allowedUsers = rights.allowance;
+            }
+
+            // 3. Add current user to allowed list
+            allowedUsers.Add(currentUser);
+
+
+
+
+            var result = await LeadServices.GetAllLeads(allowedUsers);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpGet");
@@ -58,19 +86,27 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         // ADD LEAD
         [HttpPost("add")]
         public async Task<IActionResult> AddLead([FromBody] LeadDTO leadDTOs)
         {
-            var result = await LeadServices.AddLead(leadDTOs);
+            var currentUser = User.Identity.Name;
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+            var result = await LeadServices.AddLead(leadDTOs , currentUser);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         // IMPORT FROM EXCEL
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)

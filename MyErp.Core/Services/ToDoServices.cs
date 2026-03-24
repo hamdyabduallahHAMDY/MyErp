@@ -22,49 +22,67 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
-
         // GET ALL (with Daily reset)
-        public async Task<MainResponse<ToDo>> GetAll()
+
+        public async Task<MainResponse<ToDo>> GetAll(string allowedUsers)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
             try
             {
-                var todos = await _unitOfWork.ToDos.GetAll();
+                //  Safety check
+                if (allowedUsers == null || !allowedUsers.Any())
+                {
+                    response.acceptedObjects = new List<ToDo>();
+                    return response;
+                }
+
+               // var allowed = allowedUsers.ToList();
+
+                //  Get IQueryable instead of GetAll()
+                var query = _unitOfWork.ToDos.GetQueryable();
+
+                //  Apply filtering in memory (same as Email)
+                var todos = query
+                    .AsEnumerable()
+                    .Where(t => t.AssignedTo == allowedUsers  )
+                    .ToList();
 
                 if (todos == null || !todos.Any())
                 {
-                    response.errors.Add(Errors.ObjectNotFound());
+                    response.errors?.Add(Errors.ObjectNotFound());
                     return response;
                 }
 
                 var today = DateTime.UtcNow;
 
+                //  Daily reset logic
                 foreach (var todo in todos)
                 {
-                    if (todo.Daily)
+                    if (todo.Daily && todo.LastCheckedAt.HasValue)
                     {
                         if ((today - todo.LastCheckedAt.Value).TotalMinutes >= 2)
                         {
                             todo.ischecked = (IsChecked)0;
+
                             await _unitOfWork.ToDos.Update(todo);
                         }
                     }
                 }
 
-                response.acceptedObjects = todos.ToList();
+                response.acceptedObjects = todos;
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
+
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);
             }
 
             return response;
         }
-
         // GET BY ID
         public async Task<MainResponse<ToDo>> getToDo(int id)
         {
@@ -97,12 +115,22 @@ namespace MyErp.Core.Services
         }
 
         // GET BY STATUS
-        public async Task<MainResponse<ToDo>> getByStatus(int status)
+        public async Task<MainResponse<ToDo>> getByStatus(int status, List<string> allowedUsers)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
             try
             {
+                // Safety check
+                if (allowedUsers == null || !allowedUsers.Any())
+                {
+                    response.acceptedObjects = new List<ToDo>();
+                    return response;
+                }
+
+                var allowed = allowedUsers.ToList();
+
+                // Get all todos first (like your pattern)
                 var todos = await _unitOfWork.ToDos.GetAll(a => (int)a.ischecked == status);
 
                 if (todos == null || !todos.Any())
@@ -111,7 +139,12 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                response.acceptedObjects = todos.ToList();
+                // Apply access filtering 🔥
+                var filteredTodos = todos
+                    .Where(t => allowed.Contains(t.CreatedBy))
+                    .ToList();
+
+                response.acceptedObjects = filteredTodos;
             }
             catch (Exception ex)
             {
@@ -121,9 +154,8 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         // ADD
-        public async Task<MainResponse<ToDo>> addToDo(List<ToDoDTO> todos)
+        public async Task<MainResponse<ToDo>> addToDo(List<ToDoDTO> todos , string name)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
@@ -133,9 +165,10 @@ namespace MyErp.Core.Services
 
                 var todoList = _mapper.Map<List<ToDo>>(validList.acceptedObjects);
                 var rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
-                foreach (var todo in todos)
+                foreach (var todo in todoList)
                 {
                     todo.LastCheckedAt = DateTime.UtcNow;
+                    todo.CreatedBy = name;
                 }
                 if (todoList != null && todoList.Count > 0)
                 {
@@ -235,7 +268,7 @@ namespace MyErp.Core.Services
         }
 
         // UPDATE
-        public async Task<MainResponse<ToDo>> updateToDo(int id, List<ToDoDTO> todoUpdated)
+        public async Task<MainResponse<ToDo>> updateToDo(int id, List<ToDoDTO> todoUpdated , string name)
         {
             var response = new MainResponse<ToDo>();
 
@@ -258,7 +291,7 @@ namespace MyErp.Core.Services
                 }
 
                 var dto = validList.acceptedObjects[0];
-
+                dto.CreatedBy = name; // Preserve original creator
                 _mapper.Map(dto, existingTodo);
 
                 if (dto.ischecked == 1)

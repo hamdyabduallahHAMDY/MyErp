@@ -26,15 +26,35 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
-        public async Task<MainResponse<Lead>> GetAllLeads()
+        public async Task<MainResponse<Lead>> GetAllLeads(List<string> allowedUsers)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
-            var user = await _unitOfWork.Leads.GetAll();
-            if (!user.Any())
+
+            //  Safety check
+            if (allowedUsers == null || !allowedUsers.Any())
             {
-                response.errors?.Add("There is no Tickets");
+                response.acceptedObjects = new List<Lead>();
+                return response;
             }
-            response.acceptedObjects = user.ToList();
+
+            //  Force in-memory list (avoid EF translation issues)
+            var allowed = allowedUsers.ToList();
+
+            //  Get IQueryable
+            var query = _unitOfWork.Leads.GetQueryable();
+
+            //  Execute in DB first → then filter in memory
+            var leads = query
+                .AsEnumerable()
+                .Where(l => allowed.Contains(l.CreatedBy))
+                .ToList();
+
+            // 🔄 Map to DTO
+            var leadsDTO = _mapper.Map<List<Lead>>(leads);
+
+            // 📤 Assign response
+            response.acceptedObjects = leadsDTO;
+
             return response;
         }
         public async Task<MainResponse<Lead>> GetLead(int id)
@@ -122,7 +142,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
-        public async Task<MainResponse<Lead>> AddLead(LeadDTO dto)
+        public async Task<MainResponse<Lead>> AddLead(LeadDTO dto, string name )
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
             try
@@ -134,8 +154,14 @@ namespace MyErp.Core.Services
 
                 if (acceptedTicket != null && acceptedTicket.Count > 0)
                 {
-                  
+                    // 🔥 Set CreatedBy for all leads
+                    foreach (var lead in acceptedTicket)
+                    {
+                        lead.CreatedBy = name;
+                    }
+
                     await _unitOfWork.Leads.Add(acceptedTicket);
+
                     response.acceptedObjects = acceptedTicket;
                 }
                 if (rejectedTicket != null && rejectedTicket.Count() > 0)
@@ -171,7 +197,6 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Lead> { user.First() };
             return response;
         }
-        // IMPORT FROM EXCEL
         public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile)
         {
             var response = new MainResponse<Lead>();
@@ -278,10 +303,11 @@ namespace MyErp.Core.Services
                 "cansel" => LeadStatus.Cancel,
                 "not interested" => LeadStatus.NotInterested,
                 "intersted" => LeadStatus.Interested,
-                "لا يرن" => LeadStatus.notresponding,
+                "مستجيب" => LeadStatus.responding,
                 "follow-up" => LeadStatus.FollowUp,
                 "duplicated" => LeadStatus.Duplicated,
                 "not responding" => LeadStatus.NotResponding,
+                "No Action" => LeadStatus.NoAction,
                 _ => LeadStatus.NotResponding
             };
         }

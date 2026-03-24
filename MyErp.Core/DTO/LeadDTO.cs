@@ -20,6 +20,7 @@ namespace MyErp.Core.DTO
         public DateTime? DueDate { get; set; }
         public string? FeedBack { get; set; }
         public string? Website { get; set; }
+        public string? Source { get; set; }
 
     }
 }

@@ -11,6 +11,7 @@ namespace MyErp.Core.DTO
         public string Title { get; set; }
         public string? Description { get; set; }
         public string? AssignedTo { get; set; }
+        public string? CreatedBytodo { get; set; }
         public string? CreatedBy { get; set; }
         public int ischecked { get; set; }
         public DateTime? LastCheckedAt { get; set; }
