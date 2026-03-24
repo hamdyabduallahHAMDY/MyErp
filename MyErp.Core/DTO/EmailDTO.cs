@@ -14,5 +14,8 @@ namespace MyErp.Core.DTO
         public string? Body { get; set; }
         public IFormFile? attachments { get; set; }
         public WhaOrEmail whatsoremail { get; set; }
+        public string? WhatAppMessage { get; set; }
+
+
     }
 }

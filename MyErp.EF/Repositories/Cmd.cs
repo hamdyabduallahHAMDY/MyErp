@@ -596,7 +596,18 @@ namespace MyErp.EF.Repositories
         {
             throw new NotImplementedException();
         }
-
+        public IQueryable<T> GetQueryable()
+        {
+            try
+            {
+                return _context.Set<T>().AsQueryable();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log("GetQueryable()", ex);
+                return Enumerable.Empty<T>().AsQueryable();
+            }
+        }
 
     }
 

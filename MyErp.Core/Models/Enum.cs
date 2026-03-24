@@ -32,10 +32,11 @@ namespace MyErp.Core.Models
         Cancel = 0,
         NotInterested = 1,
         Interested = 2,
-        notresponding = 3,
+        responding = 3,
         FollowUp = 4,
         Duplicated = 5,
-        NotResponding = 6
+        NotResponding = 6,
+        NoAction = 7,
     }
 
     public enum EG_KSA

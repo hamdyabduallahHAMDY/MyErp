@@ -32,6 +32,7 @@ namespace MyErp.EF.Repositories
         public ICmd<Lead> Leads { get; private set; }
         public ICmd<CalenderTask> CalenderTasks { get; private set; }
         public ICmd<Email> Emails { get; private set; }
+        public ICmd<Goal> Goals { get; private set; }
         //public ICmd<applicationUSER> applicationUSERs { get; private set; }
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -56,9 +57,10 @@ namespace MyErp.EF.Repositories
             CalenderTasks = new Cmd<CalenderTask>(_context);
 
             Leads = new Cmd<Lead>(_context);
-            Emails = new Cmd<Email>(_context);
-            //applicationUSERs = new Cmd<applicationUSER>(_context);
 
+            Emails = new Cmd<Email>(_context);
+            
+            Goals = new Cmd<Goal>(_context);
         }
         public async Task<int> Complete()
         {

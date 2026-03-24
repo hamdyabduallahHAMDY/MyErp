@@ -414,29 +414,65 @@ namespace MyErp.Core.Validation
             MainResponse<EmailDTO> response = new MainResponse<EmailDTO>();
             Errors<EmailDTO> err = new Errors<EmailDTO>();
             bool hasError = false;
-            
-                var DBemail = await ADO.GetExecuteQueryMySql<Models.Email>($"select * from Emails where subject = '{email.Subject}'");
-                if (DBemail.Count() > 0 && !isupdate)
+
+            var DBemail = await ADO.GetExecuteQueryMySql<Models.Email>($"select * from Emails where subject = '{email.Subject}'");
+            if (DBemail.Count() > 0 && !isupdate)
+            {
+                response.errors.Add(err.ObjectErrorInvExist(email.Subject));
+                response.rejectedObjects.Add(email);
+                hasError = true;
+
+            }
+            if (!email.Subject.IsStringValidation())
+            {
+                response.errors.Add(err.ObjectErrorInvExist(email.Subject));
+                response.rejectedObjects.Add(email);
+                hasError = true;
+            }
+            if (hasError)
+            {
+
+            }
+            response.acceptedObjects.Add(email);
+
+            return response;
+        }
+        public async static Task<MainResponse<GoalDTO>> GoalDTO(List<GoalDTO> insertDTO, bool isupdate = false)
+        {
+            MainResponse<GoalDTO> response = new MainResponse<GoalDTO>();
+            Errors<GoalDTO> err = new Errors<GoalDTO>();
+            bool hasError = false;
+            foreach (var goal in insertDTO)
+            {
+                var DBgoal = await ADO.GetExecuteQueryMySql<Models.Goal>($"select * from Goals where Description = '{goal.Description}' and assingedto = '{goal.AssignedTo}'");
+                if (DBgoal.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(email.Subject));
-                    response.rejectedObjects.Add(email);
+                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.rejectedObjects?.Add(goal);
                     hasError = true;
-                    
+                    continue;
                 }
-                if (!email.Subject.IsStringValidation())
+                if (!goal.Description.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(email.Subject));
-                    response.rejectedObjects.Add(email);
+                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.rejectedObjects?.Add(goal);
                     hasError = true;
+                    continue;
+                }
+                if (!goal.AssignedTo.IsStringValidation())
+                {
+                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.rejectedObjects?.Add(goal);
+                    hasError = true;
+                    continue;
                 }
                 if (hasError)
                 {
-
+                    continue;
                 }
-                response.acceptedObjects.Add(email);
-            
+                response.acceptedObjects?.Add(goal);
+            }
             return response;
         }
-
     }
 }

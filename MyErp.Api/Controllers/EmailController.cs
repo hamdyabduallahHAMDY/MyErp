@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
@@ -6,11 +7,13 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using System.Text.Json;
 
 namespace MyErp.Api.Controllers
 {
     [Route("[controller]/")]
     [ApiController]
+    [Authorize]
     public class EmailController : Controller
     {
         EmailServices EmailServices;
@@ -28,14 +31,63 @@ namespace MyErp.Api.Controllers
         [HttpGet("getAll")]
         public async Task<IActionResult> GetEmailList()
         {
-            var result = await EmailServices.getEmailsList();
+            var currentUser = User.Identity?.Name;
+           
+            
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            List<string> allowedUsers = new List<string>();
+
+            if (!string.IsNullOrEmpty(rightsJson))
+            {
+                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+                if (rights?.allowance != null)
+                    allowedUsers = rights.allowance;
+            }
+
+            // 3. Add current user to allowed list
+            allowedUsers.Add(currentUser);
+
+
+
+
+            var result = await EmailServices.getEmailsList(allowedUsers);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpGet");
 
             return resultWithStatusCode;
         }
+        [HttpGet("get by status")]
+        public async Task<IActionResult> getbystatus(int status)
+        {
+            var currentUser = User.Identity?.Name;
 
+
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            List<string> allowedUsers = new List<string>();
+
+            if (!string.IsNullOrEmpty(rightsJson))
+            {
+                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+                if (rights?.allowance != null)
+                    allowedUsers = rights.allowance;
+            }
+
+            // 3. Add current user to allowed list
+            allowedUsers.Add(currentUser);
+
+
+
+
+            var result = await EmailServices.getByStatus(allowedUsers, status);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
         // GET EMAIL BY ID
         [HttpGet("getById")]
         public async Task<IActionResult> GetEmail(int id)
@@ -60,17 +112,16 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
-        
+
         // ADD EMAIL
         [HttpPost("add")]
         public async Task<IActionResult> AddEmail([FromForm] EmailDTO emailDTOs)
         {
-            var result = await EmailServices.addEmail(emailDTOs);
+            var currentUser = User.Identity?.Name;
 
-            var resultWithStatusCode =
-                ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpPost");
+            var result = await EmailServices.addEmail(emailDTOs, currentUser);
 
-            return resultWithStatusCode;
+            return ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpPost");
         }
 
         // ADD EMAILS FROM EXCEL

@@ -6,6 +6,8 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using Mysqlx;
+using System.Text.Json;
 
 namespace MyErp.Api.Controllers
 {
@@ -25,7 +27,31 @@ namespace MyErp.Api.Controllers
         [HttpGet("getAll")]
         public async Task<IActionResult> GetToDoList()
         {
-            var result = await ToDoServices.GetAll();
+            var currentUser = User.Identity?.Name;
+            if(currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+
+            //var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            //List<string> allowedUsers = new List<string>();
+
+            //if (!string.IsNullOrEmpty(rightsJson))
+            //{
+            //    var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+            //    if (rights?.allowance != null)
+            //        allowedUsers = rights.allowance;
+            //}
+
+            // 3. Add current user to allowed list
+            //allowedUsers.Add(currentUser);
+
+
+            var result = await ToDoServices.GetAll(currentUser);
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;
         }
@@ -41,15 +67,50 @@ namespace MyErp.Api.Controllers
         [HttpGet("getByStatus")]
         public async Task<IActionResult> GetbyStatus(int status)
         {
-            var result = await ToDoServices.getByStatus(status);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+            var currentUser = User.Identity?.Name;
+
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            List<string> allowedUsers = new List<string>();
+
+            if (!string.IsNullOrEmpty(rightsJson))
+            {
+                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+                if (rights?.allowance != null)
+                    allowedUsers = rights.allowance;
+            }
+
+            // add current user
+            allowedUsers.Add(currentUser);
+
+            var result = await ToDoServices.getByStatus(status, allowedUsers);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+
             return resultWithStatusCode;
         }
 
         [HttpPut("updateById")]
         public async Task<IActionResult> PutToDo(int id, [FromBody] List<ToDoDTO> todoUpdated)
         {
-            var result = await ToDoServices.updateToDo(id, todoUpdated);
+            var currentUser = User.Identity?.Name;
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+            var result = await ToDoServices.updateToDo(id, todoUpdated , currentUser);
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
             return resultWithStatusCode;
         }
@@ -65,7 +126,15 @@ namespace MyErp.Api.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> AddToDo([FromBody] List<ToDoDTO> todos)
         {
-            var result = await ToDoServices.addToDo(todos);
+            var currentUser = User.Identity?.Name;
+            if(currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+            var result = await ToDoServices.addToDo(todos,currentUser);
             var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }

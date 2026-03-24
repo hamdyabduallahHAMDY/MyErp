@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -30,16 +31,62 @@ namespace MyErp.Core.Services
         }
 
         // GET ALL EMAILS
-        public async Task<MainResponse<Email>> getEmailsList()
+        public async Task<MainResponse<Email>> getEmailsList(List<string> allowedUsers)
         {
             MainResponse<Email> response = new MainResponse<Email>();
 
-            var emails = await _unitOfWork.Emails.GetAll();
+            // Safety check
+            if (allowedUsers == null || !allowedUsers.Any())
+            {
+                response.acceptedObjects = new List<Email>();
+                return response;
+            }
 
-            response.acceptedObjects = emails.ToList();
+            // Force in-memory list (prevents OPENJSON translation)
+            var allowed = allowedUsers.ToList();
+
+            // Get IQueryable
+            var query = _unitOfWork.Emails.GetQueryable();
+
+            // Apply filter using Any (translated differently than Contains)
+            var emails = query
+    .AsEnumerable()
+    .Where(e => allowed.Contains(e.CreatedBy))
+    .ToList();
+
+            response.acceptedObjects = emails;
 
             return response;
         }
+
+        public async Task<MainResponse<Email>> getByStatus(
+    List<string> allowedUsers,
+    int? status // 👈 optional filter
+)
+        {
+            MainResponse<Email> response = new MainResponse<Email>();
+
+            if (allowedUsers == null || !allowedUsers.Any())
+            {
+                response.acceptedObjects = new List<Email>();
+                return response;
+            }
+
+            var allowed = allowedUsers.ToList();
+
+            var query = _unitOfWork.Emails.GetQueryable();
+
+            var emails = query
+                .AsEnumerable()
+                .Where(e => allowed.Contains(e.CreatedBy)) // 👈 your filter
+                .Where(e => !status.HasValue || (int)e.whatsoremail == status.Value) // 👈 enum filter
+                .ToList();
+
+            response.acceptedObjects = emails;
+
+            return response;
+        }
+
 
         // GET EMAIL BY ID
         public async Task<MainResponse<Email>> getEmail(int id)
@@ -61,31 +108,49 @@ namespace MyErp.Core.Services
         }
 
         // ADD EMAIL
-        public async Task<MainResponse<Email>> addEmail(EmailDTO emailDTOs)
+        public async Task<MainResponse<Email>> addEmail(EmailDTO emailDTOs, string currentUser)
         {
-            MainResponse<Email> response = new MainResponse<Email>();
+            MainResponse<Email> response = new MainResponse<Email>
+            {
+                acceptedObjects = new List<Email>(),
+                rejectedObjects = new List<Email>(),
+                errors = new List<string>()
+            };
 
             try
             {
+                // Validate DTO
                 var validList = await ValidateDTO.EmailDTO(emailDTOs);
 
+                // Map accepted
                 List<Email> emailList =
                     _mapper.Map<List<Email>>(validList.acceptedObjects);
 
+                // Map rejected
                 List<Email> rejectedEmails =
                     _mapper.Map<List<Email>>(validList.rejectedObjects);
 
+                // 🔥 SET CreatedBy + CreatedDate
                 if (emailList != null && emailList.Count > 0)
                 {
+                    foreach (var email in emailList)
+                    {
+                        email.CreatedBy = currentUser;
+                        //email.CreatedDate = DateTime.UtcNow;
+                    }
+
                     await _unitOfWork.Emails.Add(emailList);
 
                     response.acceptedObjects = emailList;
                 }
 
+                // Handle rejected
                 if (rejectedEmails != null && rejectedEmails.Count > 0)
                 {
                     response.rejectedObjects = rejectedEmails;
-                    response.errors = validList.errors;
+
+                    if (validList.errors != null)
+                        response.errors.AddRange(validList.errors);
                 }
 
                 return response;
@@ -94,10 +159,12 @@ namespace MyErp.Core.Services
             {
                 Logs.Log(ex.ToString());
 
-                response.errors?.Add(ex.Message);
+                response.errors ??= new List<string>();
+
+                response.errors.Add(ex.Message);
 
                 if (ex.InnerException != null)
-                    response.errors?.Add(ex.InnerException.Message);
+                    response.errors.Add(ex.InnerException.Message);
 
                 return response;
             }
