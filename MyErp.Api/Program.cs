@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MyErp.Api;
 using MyErp.Core.Mapping;
 using MyErp.Core.Models;
 using MyErp.EF.DataAccess;
@@ -33,7 +34,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddAutoMapper(typeof(Mapping));
 var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
 
-
+builder.Services.AddScoped<RightsModelServices>();
 // 2. Identity Service
 builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()

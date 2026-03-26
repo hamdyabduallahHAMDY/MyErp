@@ -45,7 +45,8 @@ namespace MyErp.Core.Services
                 //  Apply filtering in memory (same as Email)
                 var todos = query
                     .AsEnumerable()
-                    .Where(t => t.AssignedTo == allowedUsers  )
+                    .Where(t => t.CreatedBy == allowedUsers 
+                    || t.AssignedTo ==allowedUsers)
                     .ToList();
 
                 if (todos == null || !todos.Any())

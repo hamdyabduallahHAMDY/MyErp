@@ -7,53 +7,33 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using MySqlX.XDevAPI.Common;
 using System.Text.Json;
 
 namespace MyErp.Api.Controllers
 {
+    [Authorize] 
     [Route("[controller]/")]
     [ApiController]
     public class LeadController : Controller
     {
         LeadServices LeadServices;
         private readonly IMapper _mapper;
-
-        public LeadController(ApplicationDbContext dBContext, IMapper mapper)
+        private readonly RightsModelServices _accessService;
+        public LeadController(ApplicationDbContext dBContext, IMapper mapper, RightsModelServices accessService)
         {
             UnitOfWork unitOfWork = new UnitOfWork(dBContext);
             _mapper = mapper;
             LeadServices = new LeadServices(unitOfWork, _mapper);
+            _accessService = accessService;
         }
 
-        // GET ALL LEADS
         [HttpGet("getAll")]
         public async Task<IActionResult> GetLeadList()
         {
-            var currentUser = User.Identity?.Name;
-            if (currentUser == null)
-            {
-                return Unauthorized(new
-                {
-                    message = "You must log in first."
-                });
-            }
+            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
 
-            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
-            List<string> allowedUsers = new List<string>();
-
-            if (!string.IsNullOrEmpty(rightsJson))
-            {
-                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
-
-                if (rights?.allowance != null)
-                    allowedUsers = rights.allowance;
-            }
-
-            // 3. Add current user to allowed list
-            allowedUsers.Add(currentUser);
-
-
-
+          
 
             var result = await LeadServices.GetAllLeads(allowedUsers);
 
@@ -67,6 +47,8 @@ namespace MyErp.Api.Controllers
         [HttpGet("getById")]
         public async Task<IActionResult> GetLead(int id)
         {
+            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
+
             var result = await LeadServices.GetLead(id);
 
             var resultWithStatusCode =
@@ -79,19 +61,20 @@ namespace MyErp.Api.Controllers
         [HttpPut("updateById")]
         public async Task<IActionResult> PutLead(int id, [FromBody] LeadDTO leadUpdated)
         {
-            var result = await LeadServices.UpdateLead(id, leadUpdated);
+            var createdby = User.Identity?.Name;
+            var result = await LeadServices.UpdateLead(id, leadUpdated , createdby);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPut");
 
             return resultWithStatusCode;
         }
-        [Authorize]
+        //[Authorize]
         // ADD LEAD
         [HttpPost("add")]
         public async Task<IActionResult> AddLead([FromBody] LeadDTO leadDTOs)
         {
-            var currentUser = User.Identity.Name;
+            var currentUser = User.Identity?.Name;
             if (currentUser == null)
             {
                 return Unauthorized(new
@@ -99,7 +82,7 @@ namespace MyErp.Api.Controllers
                     message = "You must log in first."
                 });
             }
-            var result = await LeadServices.AddLead(leadDTOs , currentUser);
+            var result = await LeadServices.AddLead(leadDTOs, currentUser);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
@@ -129,6 +112,68 @@ namespace MyErp.Api.Controllers
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
+        }
+        [HttpGet("getCountByStatus")]
+        public async Task<IActionResult> GetCountByStatus()
+        { 
+            var currentUser = User.Identity?.Name;
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            List<string> allowedUsers = new List<string>();
+
+            if (!string.IsNullOrEmpty(rightsJson))
+            {
+                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
+
+                if (rights?.allowance != null)
+                    allowedUsers = rights.allowance;
+            }
+
+            // 3. Add current user to allowed list
+            allowedUsers.Add(currentUser);
+
+
+            var result = await LeadServices.GetNoOfLeadsByStatus(allowedUsers);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<LeadStatusCountDTO>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
+
+        [HttpGet("getByResponse")]
+        public async Task<IActionResult> GetLeadRes(string name)
+        {
+            var result = await LeadServices.GetRespondingLeads(name);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
+
+        [HttpDelete("deleteGroup")]
+        public async Task<IActionResult> DeleteGroup(List<int> ints)
+        {
+            var result = await LeadServices.deleteGroup(ints);
+            var resultWithStatusCode = ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
+        [HttpGet("template")]
+        public IActionResult DownloadTemplate()
+        {
+            var fileBytes = LeadServices.GenerateExcelTemplate();
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Lead_Template.xlsx");
         }
     }
 }
