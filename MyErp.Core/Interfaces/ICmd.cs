@@ -8,7 +8,7 @@ using MyErp.Core.Models;
 
 namespace MyErp.Core.Interfaces
 {
-    public interface ICmd<T> where T : Common
+    public interface ICmd<T> where T : class
     {
         Task<T> Add(T entity);
         Task<List<T>> Add(List<T> entities);
@@ -37,6 +37,7 @@ namespace MyErp.Core.Interfaces
         Task<T> GetById(Expression<Func<T, bool>> expression, params string[] includes);
         IEnumerable<object> Where(Func<object, bool> value);
         Task<IEnumerable<T>> Find(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        IQueryable<T> GetQueryable();
         object Include(Func<object, object> value);
     }
 }

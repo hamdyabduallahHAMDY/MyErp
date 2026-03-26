@@ -41,6 +41,20 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
+        [HttpGet("getByStatus")]
+        public async Task<IActionResult> GetUserByStatus(int status)
+        {
+            var result = await UserServices.getTicketByStatus(status);
+            var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
+        [HttpGet("getByTaxRegTaxId")]
+        public async Task<IActionResult> GetUserByTaxRegTaxId(int status)
+        {
+            var result = await UserServices.getTicketByTaxRegistrationId(status);
+            var resultWithStatusCode = ResponseStatusCode<TickectinvioceDTO>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
         [HttpPut("updateById")]
         public async Task<IActionResult> PutUser(int id, [FromForm] TicketDTO userupdated )
         {
@@ -59,7 +73,13 @@ namespace MyErp.Api.Controllers
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }
-
+        [HttpPut("UpadteStatus")]
+        public async Task<IActionResult> UpdateStatus(int id, int status)
+        {
+            var result = await UserServices.UpdateStatus(id, status);
+            var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpPut");
+            return resultWithStatusCode;
+        }
 
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteUser(int id)

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
+using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using Mysqlx.Crud;
 using Org.BouncyCastle.Utilities;
@@ -20,17 +21,24 @@ namespace MyErp.EF.Repositories
     {
         private readonly ApplicationDbContext _context;
      
-        public ICmd<User> Users { get; private set; }
+    //    public ICmd<User> Users { get; private set; }
         public ICmd<Ticket> Tickets { get; private set; }   
         public ICmd<Contract> Contracts { get; private set; }
         public ICmd<UserSession> UserSessions { get; private set; } 
         public ICmd<Customer> Customers { get; private set; } 
         public ICmd<Document> Documents { get; private set; }
+        public ICmd<FAQ> FAQs { get; private set; }
+        public ICmd<ToDo> ToDos { get; private set; }
+        public ICmd<Lead> Leads { get; private set; }
+        public ICmd<CalenderTask> CalenderTasks { get; private set; }
+        public ICmd<Email> Emails { get; private set; }
+        public ICmd<Goal> Goals { get; private set; }
+        //public ICmd<applicationUSER> applicationUSERs { get; private set; }
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
            
-            Users = new Cmd<User>(_context);
+           // Users = new Cmd<User>(_context);
            
             Tickets = new Cmd<Ticket>(_context);
 
@@ -42,6 +50,17 @@ namespace MyErp.EF.Repositories
 
             Documents = new Cmd<Document>(_context);
 
+            FAQs = new Cmd<FAQ>(_context);
+
+            ToDos = new Cmd<ToDo>(_context);
+
+            CalenderTasks = new Cmd<CalenderTask>(_context);
+
+            Leads = new Cmd<Lead>(_context);
+
+            Emails = new Cmd<Email>(_context);
+            
+            Goals = new Cmd<Goal>(_context);
         }
         public async Task<int> Complete()
         {

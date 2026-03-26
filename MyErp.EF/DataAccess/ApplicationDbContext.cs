@@ -7,7 +7,7 @@ using Org.BouncyCastle.Utilities;
 
 namespace MyErp.EF.DataAccess;
 
-public class ApplicationDbContext : IdentityDbContext
+public class ApplicationDbContext : IdentityDbContext<User>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
@@ -28,11 +28,18 @@ public class ApplicationDbContext : IdentityDbContext
     #region
  
     public DbSet<Ticket> Tickets { get; set; }
-    public DbSet<User> Users { get; set; }
+    //public DbSet<User> Users { get; set; }
     public DbSet<Contract> Contracts { get; set; }
     public DbSet<UserSession> UserSessions { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Document> Documents { get; set; }
+    public DbSet<FAQ> FAQs { get; set; }
+    public DbSet<ToDo> ToDos { get; set; }
+    public DbSet<Lead> Leads { get; set; }
+    public DbSet<CalenderTask> CalenderTasks { get; set; }
+    public DbSet<Email> Emails { get; set; }    
+    public DbSet<Goal> Goals { get; set; }
+    //public DbSet<AppUser> applicationUSERs { get; set; }
     #endregion
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

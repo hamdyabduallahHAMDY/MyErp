@@ -1,0 +1,15 @@
+[
+  {
+    "ConnectionString": "SQL^Data Source=DESKTOP-MGSMF1J;Initial Catalog=EyeCareDwonloader;Encrypt=False;Integrated Security=False;User ID=sa;password=pass@word1",
+    "SignatureSource": "eps2003csp11.dll",
+    "MaxAcceptValueTot": "0.5",
+    "JobsPCNames": "MasterPC",
+    "ImportLogStatusSelector": "All",
+    "ImportDateFormat": "[\"yyyy-MM-dd h:mm:ss tt\", \"yyyy-MM-dd\"]",
+    "BranchesFilter": "all",
+    "GetPurshaseOnly":"false",
+    "PaymentOrder": "0",
+    "PaymentPhoto": "0",
+    "PhotosPath": "\\192.168.1.25\\FlexeSoft\\test ganob photo"
+  }
+]

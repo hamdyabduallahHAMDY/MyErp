@@ -9,7 +9,9 @@ using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -49,6 +51,40 @@ namespace MyErp.Core.Services
             }
 
             response.acceptedObjects = new List<Ticket> { user };
+            return response;
+        }
+        public async Task<MainResponse<TickectinvioceDTO>> getTicketByTaxRegistrationId(int taxRegistrationId)
+        {
+            MainResponse<TickectinvioceDTO> response = new MainResponse<TickectinvioceDTO>();
+            var tickets = await _unitOfWork.Tickets.GetBy(x => x.TaxRegistrationId == taxRegistrationId);
+            if (tickets == null || !tickets.Any())
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+            response.acceptedObjects = tickets
+                .Select(x => new TickectinvioceDTO
+                {
+                    Attachment = x.Attachment,
+                    Description = x.Description,
+                    Status = x.Status.ToString()
+                })
+                .ToList(); return response;
+        }
+        public async Task<MainResponse<Ticket>> getTicketByStatus(int status)
+        {
+            MainResponse<Ticket> response = new MainResponse<Ticket>();
+            var tickets = await _unitOfWork.Tickets.GetBy(x => ((int)x.Status) == status);
+
+            if (tickets == null)
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+
+            response.acceptedObjects = tickets.ToList();
             return response;
         }
         public async Task<MainResponse<Ticket>> updateTicket(int id, TicketDTO userUpdated, string apiRootPath)
@@ -132,61 +168,83 @@ namespace MyErp.Core.Services
             MainResponse<Ticket> response = new MainResponse<Ticket>();
             try
             {
-
-
-                response.acceptedObjects = new List<Ticket>();
-
+                var validList = await ValidateDTO.TicketDTO(dto);
                 string savedFilePath = null;
 
-                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                List<Ticket> acceptedTicket = _mapper.Map<List<Ticket>>(validList.acceptedObjects);
+                List<Ticket> rejectedTicket = _mapper.Map<List<Ticket>>(validList.rejectedObjects);
+
+                if (acceptedTicket != null && acceptedTicket.Count > 0)
                 {
-                    // Create Uploads folder inside API root
-                    string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
-
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
-
-                    // Create unique filename
-
-                    string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
-
-                    // Save file physically
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    if (dto.Attachment != null && dto.Attachment.Length > 0)
                     {
-                        await dto.Attachment.CopyToAsync(stream);
+                        string uploadsFolder = Path.Combine(apiRootPath, "Upload_Ticket");
+
+                        if (!Directory.Exists(uploadsFolder))
+                            Directory.CreateDirectory(uploadsFolder);
+
+                        string fullPath = Path.Combine(uploadsFolder, dto.Attachment.FileName    /*uniqueFileName*/);
+
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await dto.Attachment.CopyToAsync(stream);
+                        }
+
+                        savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
                     }
 
-                    // Save relative path in DB
-                    savedFilePath = Path.Combine("Upload_Ticket" /*uniqueFileName*/);
+                    await _unitOfWork.Tickets.Add(acceptedTicket);
+                    response.acceptedObjects = acceptedTicket;
+                }
+                if (rejectedTicket != null && rejectedTicket.Count() > 0) 
+                {
+                    List<String> err = validList.errors;
+                    response.rejectedObjects = rejectedTicket;
+                    response.errors = err;
+                }
+                return response;
+            }
+
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors = new List<string> { ex.Message };
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+                return response;
+            }
+        }   
+
+        public async Task<MainResponse<Ticket>> UpdateStatus(int id, int status)
+        {
+            var response = new MainResponse<Ticket>();
+
+            try
+            {
+                var existingTicket =
+                    await _unitOfWork.Tickets.GetFirst(t => t.Id == id);
+
+                if (existingTicket == null)
+                {
+                    response.errors.Add($"Ticket with ID {id} not found.");
+                    return response;
                 }
 
-                Ticket ticket = new Ticket
-                {
-                    TaxRegistrationId = dto.TaxRegistrationId,
-                    Attachment = dto.Attachment.FileName,
-                    TaxRegistrationName = dto.TaxRegistrationName,
-                    Description = dto.Description,
-                    Status = (Status)dto.Status
-                }; 
+                // ✅ SAFE UPDATE
+                existingTicket.Status = (Status)status;
 
-                await _unitOfWork.Tickets.Add(ticket);
-                //await _unitOfWork.sav();
+                await _unitOfWork.Tickets.Update(existingTicket);
 
-                response.acceptedObjects.Add(ticket);
-
-                return response;
+                response.acceptedObjects ??= new List<Ticket>();
+                response.acceptedObjects.Add(existingTicket);
             }
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-
-                response.errors = new List<string> { ex.Message };
-
-                if (ex.InnerException != null)
-                    response.errors.Add(ex.InnerException.Message);
-
-                return response;
+                response.errors.Add(ex.Message);
             }
+
+            return response;
         }
 
         public async Task<MainResponse<Ticket>> deleteUser(int id)

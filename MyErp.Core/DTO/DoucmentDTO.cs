@@ -10,6 +10,7 @@ namespace MyErp.Core.DTO
     public class DocumentDTO
     {
         public string Name { get; set; }
-        public IFormFile Attachment { get; set; }
+        public string? subject { get; set; }
+        public IFormFile? Attachment { get; set; }
     }
 }

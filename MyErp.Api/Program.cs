@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyErp.Core.Mapping;
+using MyErp.Core.Models;
 using MyErp.EF.DataAccess;
+using OfficeOpenXml;
 using System;
 using System.Text;
 var builder = WebApplication.CreateBuilder(args);
@@ -33,8 +35,9 @@ var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
 
 
 // 2. Identity Service
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 // 3. JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -63,7 +66,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Test Auth API", Version = "v1" });
 
-    //  ⁄—Ì› «·‹ Bearer Auth ›Ì Swagger
+    // √ä√ö√ë√≠√ù √á√°√ú Bearer Auth √ù√≠ Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -96,6 +99,10 @@ MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
 //{
 //    options.Listen(System.Net.IPAddress.Parse("192.168.1.20"), 1234);
 //});
+
+
+// EPPlus License
+ExcelPackage.License.SetNonCommercialPersonal("MyErp Development");
 var app = builder.Build();
 app.UseCors();
 app.UseStaticFiles();
@@ -110,12 +117,13 @@ using (var scope = app.Services.CreateScope())
 //if (app.Environment.IsDevelopment())
 //{
     app.UseSwagger();
+
     app.UseSwaggerUI();
 //}
-
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
