@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.VisualBasic;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -10,6 +11,7 @@ using MyErp.Core.Validation;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +28,56 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
+
+        public async Task<MainResponse<LeadStatusPercentage>> GetLeadsStatus(string UserId, DateTime dateFrom, DateTime dateTo)
+        {
+            MainResponse<LeadStatusPercentage> response = new MainResponse<LeadStatusPercentage>();
+            List<LeadStatusPercentage> leadStatuses = new List<LeadStatusPercentage>();
+
+            var leads = await _unitOfWork.Leads.GetAll(l => l.AssignedTo == UserId && l.DueDate >= dateFrom && l.DueDate <= dateTo.Date.AddDays(1));
+
+            foreach (LeadStatus status in /*leads.Select(l => l.Status).Distinct()*/Enum.GetValues(typeof(LeadStatus)))
+            {
+                var sts = leads.Where(u => u.Status == status).ToList();
+                var stsPerc = (decimal)((decimal)sts.Count() / (decimal)leads.Count()) * 100;
+
+                leadStatuses.Add(new LeadStatusPercentage { Status = status, Percentage = Math.Round(stsPerc, 2) });
+            }
+
+
+            response.acceptedObjects = leadStatuses;
+
+            return response;
+        }
+
+        public async Task<MainResponse<LeadsCountry>> GetLeadsCountries(string UserId, DateTime dateFrom, DateTime dateTo)
+        {
+            MainResponse<LeadsCountry> response = new MainResponse<LeadsCountry>();
+            List<LeadsCountry> LeadsCountry = new List<LeadsCountry>();
+
+            var leads = await _unitOfWork.Leads.GetAll(l=>l.AssignedTo == UserId && l.DueDate >= dateFrom && l.DueDate <= dateTo.Date.AddDays(1));
+
+            foreach(EG_KSA country in Enum.GetValues(typeof(EG_KSA)))
+            {
+                var cty = leads.Where(u => u.Country == country).ToList();
+                //var ctyPerc = (decimal)((decimal)cty.Count() / (decimal)leads.Count()) * 100;
+
+                //var ctyEG = leads.Where(u => u.Country == country).ToList();
+                LeadsCountry.Add(new LeadsCountry { Country = country, Percentage = (decimal)cty.Count() });
+            }
+
+            //var ctyEG = leads.Where(u => u.Country == EG_KSA.Egypt).ToList();
+            //LeadsCountry.Add(new LeadsCountry { Country = EG_KSA.Egypt, Percentage = (decimal)ctyEG.Count() });
+
+            //var ctyKSA = leads.Where(u => u.Country == EG_KSA.KSA).ToList();
+            //LeadsCountry.Add(new LeadsCountry { Country = EG_KSA.KSA, Percentage = (decimal)ctyKSA.Count() });
+
+
+            response.acceptedObjects = LeadsCountry;
+
+            return response;
+        }
+
         public async Task<MainResponse<Lead>> GetAllLeads(List<string> allowedUsers)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -87,6 +139,9 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
+
+
+
         public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
         {
             var response = new MainResponse<Lead>();
@@ -223,7 +278,7 @@ namespace MyErp.Core.Services
                     response.errors?.Add("Worksheet not found.");
                     return response;
                 }
-                var Leads =new List<Lead>();
+                var Leads = new List<Lead>();
                 int rows = worksheet.Dimension?.Rows ?? 0;
 
                 for (int r = 2; r <= rows; r++)
@@ -291,6 +346,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
         private LeadStatus ParseLeadStatus(string status)
         {
             if (string.IsNullOrWhiteSpace(status))
