@@ -249,6 +249,26 @@ namespace MyErp.EF.Repositories
                 return Enumerable.Empty<T>();
             }
         }
+        //new GET All By Users 
+        public async Task<IEnumerable<T>> GetAllByUsers(List<string> allowedUsers)
+        {
+            try
+            {
+                if (allowedUsers == null || !allowedUsers.Any())
+                    return Enumerable.Empty<T>();
+
+                var data = await _context.Set<T>().ToListAsync();
+
+                return data
+                    .Where(e => allowedUsers.Contains(e.CreatedBy))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log("GetAllByUsers()", ex);
+                return Enumerable.Empty<T>();
+            }
+        }
 
         public async Task<IEnumerable<T>> GetAll(Expression<Func<T, bool>> expression)
         {

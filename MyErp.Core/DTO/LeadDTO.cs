@@ -23,4 +23,9 @@ namespace MyErp.Core.DTO
         public string? Source { get; set; }
 
     }
+    public class LeadStatusCountDTO
+    {
+        public int Status { get; set; }
+        public int Count { get; set; }
+    }
 }
