@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
@@ -27,6 +28,61 @@ namespace MyErp.Core.Services
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+        }
+        public byte[] GenerateExcelTemplate()
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Leads");
+
+                // 🎯 Headers
+                var headers = new List<string>
+        {
+            "Name",
+            "PhoneNo",
+            "Email",
+            "CompanyName",
+            "AssignedTo",
+            "Status",
+            "Country",
+            "Notes",
+            "DueDate",
+            "FeedBack",
+            "Website"
+        };
+
+                // Add headers
+                for (int i = 0; i < headers.Count; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headers[i];
+                    worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                }
+
+                // 🎨 Styling
+                using (var range = worksheet.Cells[1, 1, 1, headers.Count])
+                {
+                    range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                // 📏 Auto fit columns
+                worksheet.Cells.AutoFitColumns();
+
+                // 🧠 Optional: Add sample row (VERY useful for users)
+                worksheet.Cells[2, 1].Value = "John Doe";
+                worksheet.Cells[2, 2].Value = "01000000000";
+                worksheet.Cells[2, 3].Value = "john@email.com";
+                worksheet.Cells[2, 4].Value = "ABC Company";
+                worksheet.Cells[2, 5].Value = "ahmed";
+                worksheet.Cells[2, 6].Value = "follow-up"; // Status
+                worksheet.Cells[2, 7].Value = "EG";
+                worksheet.Cells[2, 8].Value = "Important client";
+                worksheet.Cells[2, 9].Value = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd");
+                worksheet.Cells[2, 10].Value = "Follow up";
+                worksheet.Cells[2, 11].Value = "www.abc.com";
+
+                return package.GetAsByteArray();
+            }
         }
 
         public async Task<MainResponse<LeadStatusPercentage>> GetLeadsStatus(string UserId, DateTime dateFrom, DateTime dateTo)
@@ -82,30 +138,29 @@ namespace MyErp.Core.Services
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
 
-            //  Safety check
             if (allowedUsers == null || !allowedUsers.Any())
             {
                 response.acceptedObjects = new List<Lead>();
                 return response;
             }
 
-            //  Force in-memory list (avoid EF translation issues)
-            var allowed = allowedUsers.ToList();
+            // Get ALL leads once
+            var allLeads = await _unitOfWork.Leads.GetAll();
 
-            //  Get IQueryable
-            var query = _unitOfWork.Leads.GetQueryable();
-
-            //  Execute in DB first → then filter in memory
-            var leads = query
-                .AsEnumerable()
-                .Where(l => allowed.Contains(l.CreatedBy))
+            // Filter in memory (safe)
+            var filtered = allLeads
+                .Where(l =>
+                    allowedUsers.Contains(l.CreatedBy) ||
+                    allowedUsers.Contains(l.AssignedTo))
                 .ToList();
 
-            // 🔄 Map to DTO
-            var leadsDTO = _mapper.Map<List<Lead>>(leads);
+            if (!filtered.Any())
+            {
+                response.errors.Add(Errors.ObjectNotFound());
+                return response;
+            }
 
-            // 📤 Assign response
-            response.acceptedObjects = leadsDTO;
+            response.acceptedObjects = filtered;
 
             return response;
         }
@@ -139,6 +194,7 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
+        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
 
 
 
@@ -175,10 +231,12 @@ namespace MyErp.Core.Services
                 }
 
                 var dto = validList.acceptedObjects[0];
+               
                 _mapper.Map(dto, existingLeads);
-
+                existingLeads.CreatedBy = createdby;
+                
                 await _unitOfWork.Leads.Update(existingLeads);
-
+                
                 response.acceptedObjects ??= new List<Lead>();
                 response.acceptedObjects.Add(existingLeads);
 
@@ -197,7 +255,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
-        public async Task<MainResponse<Lead>> AddLead(LeadDTO dto, string name )
+        public async Task<MainResponse<Lead>> AddLead(LeadDTO dto, string name)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
             try
@@ -347,6 +405,64 @@ namespace MyErp.Core.Services
             return response;
         }
 
+        public async Task<MainResponse<Lead>> GetRespondingLeads(string Name)
+        {
+            MainResponse<Lead> response = new MainResponse<Lead>();
+            var leads = await _unitOfWork.Leads.GetBy(x => ((int)x.Status) == 3 && x.CreatedBy == Name);
+
+            if (leads == null)
+            {
+                string error = Errors.ObjectNotFound();
+                response.errors = new List<string> { error };
+                return response;
+            }
+
+            response.acceptedObjects = leads.ToList();
+            return response;
+        }
+        public async Task<MainResponse<LeadStatusCountDTO>> GetNoOfLeadsByStatus(List<string> allowedUsers)
+        {
+            MainResponse<LeadStatusCountDTO> response = new MainResponse<LeadStatusCountDTO>();
+
+            try
+            {
+                if (allowedUsers == null || !allowedUsers.Any())
+                {
+                    response.acceptedObjects = new List<LeadStatusCountDTO>();
+                    return response;
+                }
+                foreach (var x in allowedUsers)
+                {
+                    var leadss = _unitOfWork.Leads.GetAll(x => x.CreatedBy == x.ToString()); 
+
+
+                }
+                    var allowed = allowedUsers.ToList();
+
+                var leads = _unitOfWork.Leads.GetQueryable()
+                    .AsEnumerable()
+                    .Where(l => allowed.Contains(l.CreatedBy))
+                    .ToList();
+
+                var result = leads
+                    .GroupBy(l => l.Status)
+                    .Select(g => new LeadStatusCountDTO
+                    {
+                        Status = (int)g.Key,
+                        Count = g.Count()
+                    })
+                    .ToList();
+
+                response.acceptedObjects = result;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+
+            return response;
+        }
         private LeadStatus ParseLeadStatus(string status)
         {
             if (string.IsNullOrWhiteSpace(status))
@@ -366,6 +482,34 @@ namespace MyErp.Core.Services
                 "No Action" => LeadStatus.NoAction,
                 _ => LeadStatus.NotResponding
             };
+        }
+        // DELETE GROUP
+        public async Task<MainResponse<Lead>> deleteGroup(List<int> ids)
+        {
+            MainResponse<Lead> response = new MainResponse<Lead>();
+
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var deletedTodos = await _unitOfWork.Leads.DeletePhysical(p => p.Id == id);
+                    if (deletedTodos == null || !deletedTodos.Any())
+                    {
+                        response.errors?.Add($"id = {id} not found");
+                        return response;
+                    }
+                    else
+                    {
+                        response.acceptedObjects = deletedTodos.ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+            return response;
         }
     }
 }

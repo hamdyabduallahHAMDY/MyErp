@@ -76,8 +76,8 @@ namespace MyErp.Core.Validation
                 var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{calen.Title}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(calen.Title));
-                    response.rejectedObjects.Add(calen);
+                    response.errors?.Add(err.ObjectErrorInvExist(calen.Title));
+                    response.rejectedObjects?.Add(calen);
                     hasError = true;
                     continue;
                 }
@@ -85,23 +85,23 @@ namespace MyErp.Core.Validation
 
                 if (calen.EndTime <= now)
                 {
-                    response.errors.Add("EndTime can't be before the current time.");
-                    response.rejectedObjects.Add(calen);
+                    response.errors?.Add("EndTime can't be before the current time.");
+                    response.rejectedObjects?.Add(calen);
                     hasError = true;
                     continue;
                 }
 
                 if (calen.StartTime >= calen.EndTime)
                 {
-                    response.errors.Add("StartTime can't be after or equal to EndTime.");
-                    response.rejectedObjects.Add(calen);
+                    response.errors?.Add("StartTime can't be after or equal to EndTime.");
+                    response.rejectedObjects?.Add(calen);
                     hasError = true;
                     continue;
                 }
                 if (!(calen.allday == "false" || calen.allday == "true"))
                 {
-                    response.errors.Add("Invalid allday status.");
-                    response.rejectedObjects.Add(calen);
+                    response.errors?.Add("Invalid allday status.");
+                    response.rejectedObjects?.Add(calen);
                     hasError = true;
                     return response;
 
@@ -110,7 +110,7 @@ namespace MyErp.Core.Validation
                 {
                     continue;
                 }
-                response.acceptedObjects.Add(calen);
+                response.acceptedObjects?.Add(calen);
             }
             return response;
         }

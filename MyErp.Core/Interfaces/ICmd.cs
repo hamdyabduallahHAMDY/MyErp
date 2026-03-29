@@ -20,6 +20,7 @@ namespace MyErp.Core.Interfaces
         Task<List<T>> DeletePhysical(List<T> entities);
         Task<List<T>> DeletePhysical(Expression<Func<T, bool>> expression);
         Task<IEnumerable<T>> GetAll();
+        Task<IEnumerable<T>> GetAllByUsers(List<string> allowedUsers);
         Task<IEnumerable<T>> GetAll(Expression<Func<T, bool>> expression);
         Task<IEnumerable<T>> GetAll(Expression<Func<T, bool>> expression, params string[] includes);
         Task<T> GetFirst();
