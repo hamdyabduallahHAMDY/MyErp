@@ -43,6 +43,29 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+
+        [HttpGet("LeadsStatus")]
+        public async Task<IActionResult> getLeadStatus(string UserId, DateTime dateFrom, DateTime dateTo)
+        {
+            var result = await LeadServices.GetLeadsStatus(UserId, dateFrom, dateTo);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<LeadStatusPercentage>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
+
+        [HttpGet("LeadsCountry")]
+        public async Task<IActionResult> getLeadsCountry(string UserId, DateTime dateFrom, DateTime dateTo)
+        {
+            var result = await LeadServices.GetLeadsCountries(UserId, dateFrom, dateTo);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<LeadsCountry>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
+
         // GET LEAD BY ID
         [HttpGet("getById")]
         public async Task<IActionResult> GetLead(int id)
