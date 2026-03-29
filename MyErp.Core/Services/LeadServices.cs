@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualBasic;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
@@ -11,6 +12,7 @@ using MyErp.Core.Validation;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
@@ -41,7 +43,7 @@ namespace MyErp.Core.Services
                 var sts = leads.Where(u => u.Status == status).ToList();
                 var stsPerc = (decimal)((decimal)sts.Count() / (decimal)leads.Count()) * 100;
 
-                leadStatuses.Add(new LeadStatusPercentage { Status = status, Percentage = Math.Round(stsPerc, 2) });
+                leadStatuses.Add(new LeadStatusPercentage { Status =  status, Percentage = Math.Round(stsPerc, 2) });
             }
 
 
@@ -75,6 +77,38 @@ namespace MyErp.Core.Services
 
             response.acceptedObjects = LeadsCountry;
 
+            return response;
+        }
+
+        public async Task<MainResponse<LeadsStatusbyAssignedUser>> GetLeadsStatusByAssignedUser()
+        {
+            MainResponse<LeadsStatusbyAssignedUser> response = new MainResponse<LeadsStatusbyAssignedUser>();
+
+            var leads = await _unitOfWork.Leads.GetAll(l => l.AssignedTo != null);
+
+            var users = leads
+                .Select(l => l.AssignedTo)
+                .Distinct();
+
+            var result = new List<LeadsStatusbyAssignedUser>();
+
+            foreach (var user in users)
+            {
+                var userLeads = leads.Where(l => l.AssignedTo == user);
+
+                result.Add(new LeadsStatusbyAssignedUser
+                {
+                    Name = user,
+                    Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
+                    NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
+                    Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
+                    NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
+                    FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
+
+                });
+            }
+
+            response.acceptedObjects = result;
             return response;
         }
 

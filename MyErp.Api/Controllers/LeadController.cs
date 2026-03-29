@@ -86,6 +86,17 @@ namespace MyErp.Api.Controllers
             return resultWithStatusCode;
         }
 
+        [HttpGet("getLeadsStatusbyAssignedUser")]
+        public async Task<IActionResult> getLeadsStatusbyAssignedUser()
+        {
+            var result = await LeadServices.GetLeadsStatusByAssignedUser();
+
+            var resultWithStatusCode =
+                ResponseStatusCode<LeadsStatusbyAssignedUser>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        }
+
         // GET LEAD BY ID
         [HttpGet("getById")]
         public async Task<IActionResult> GetLead(int id)
