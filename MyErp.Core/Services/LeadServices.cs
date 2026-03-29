@@ -194,11 +194,11 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
-        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
+      public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
 
 
 
-        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
+      //  public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
         {
             var response = new MainResponse<Lead>();
 
@@ -350,13 +350,13 @@ namespace MyErp.Core.Services
                     var email = worksheet.Cells[r, 3].Text?.Trim();
                     var company = worksheet.Cells[r, 4].Text?.Trim();
                     var statusText = worksheet.Cells[r, 5].Text?.Trim();
-                    var owner = worksheet.Cells[r, 6].Text?.Trim();
+                    var owner = worksheet.Cells[r, 12].Text?.Trim();
                     var countryText = worksheet.Cells[r, 7].Text?.Trim();
                     var notes = worksheet.Cells[r, 8].Text?.Trim();
                     var dueDateText = worksheet.Cells[r, 9].Text?.Trim();
                     var feedback = worksheet.Cells[r, 10].Text?.Trim();
                     var Website = worksheet.Cells[r, 11].Text?.Trim();
-
+                    var AssginedTo = worksheet.Cells[r, 6].Text?.Trim();
                     Enum.TryParse(statusText, true, out LeadStatus status);
                     Enum.TryParse(countryText, true, out EG_KSA country);
 
@@ -371,7 +371,7 @@ namespace MyErp.Core.Services
                         PhoneNo = phone,
                         Email = email,
                         CompanyName = company,
-                        AssignedTo = name,
+                        AssignedTo = AssginedTo,
                         Status = ParseLeadStatus(statusText),
                         Country = country,
                         Notes = notes,
