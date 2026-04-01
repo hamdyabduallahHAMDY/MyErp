@@ -98,8 +98,8 @@ namespace MyErp.Api.Controllers
         [HttpPut("updateById")]
         public async Task<IActionResult> PutLead(int id, [FromBody] LeadDTO leadUpdated)
         {
-            var createdby = User.Identity?.Name;
-            var result = await LeadServices.UpdateLead(id, leadUpdated , createdby);
+            //var createdby = User.Identity?.Name;
+            var result = await LeadServices.UpdateLead(id, leadUpdated );
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPut");

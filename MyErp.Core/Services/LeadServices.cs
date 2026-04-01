@@ -174,13 +174,10 @@ namespace MyErp.Core.Services
                     Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
                     NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
                     Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
-                    responding = userLeads.Count(l => l.Status == LeadStatus.responding),
                     FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
                     Duplicated = userLeads.Count(l => l.Status == LeadStatus.Duplicated),
                     NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
                     Responding = userLeads.Count(l => l.Status == LeadStatus.responding),
-                    FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
-
                     NoAction = userLeads.Count(l => l.Status == LeadStatus.NoAction),
                 });
             }
@@ -251,7 +248,6 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
-        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
 
 
 
@@ -305,7 +301,7 @@ namespace MyErp.Core.Services
                 }
 
                 // Keep your existing logic
-                existingLeads.CreatedBy = createdby;
+                existingLeads.CreatedBy = existingLeads.CreatedBy;
 
                 await _unitOfWork.Leads.Update(existingLeads);
 
