@@ -64,7 +64,7 @@ namespace MyErp.Api.Controllers
             var currentUser = User.Identity?.Name;
 
 
-            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
+            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "allowance")?.Value;
             List<string> allowedUsers = new List<string>();
 
             if (!string.IsNullOrEmpty(rightsJson))

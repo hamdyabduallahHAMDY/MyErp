@@ -207,7 +207,7 @@ namespace MyErp.Core.Services
 
 
         //Add Excel Document
-        public async Task<MainResponse<Document>> ImportFromExcel(IFormFile excelFile)
+        public async Task<MainResponse<Document>> ImportFromExcel(IFormFile excelFile , string currentuser)
         {
             var response = new MainResponse<Document>();
 
@@ -256,7 +256,7 @@ namespace MyErp.Core.Services
 
                     // extra safety
                     document.Attachment = null;
-
+                    document.CreatedBy = currentuser;
                     docsToAdd.Add(document);
                 }
 
@@ -283,7 +283,29 @@ namespace MyErp.Core.Services
 
             return response;
         }
+        public async Task<byte[]> GenerateDocumentExcelTemplate()
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Document Template");
 
+            // ================= HEADERS =================
+            worksheet.Cells[1, 1].Value = "Name";
+            worksheet.Cells[1, 2].Value = "Subject";
+
+            // ================= DEMO ROW =================
+            worksheet.Cells[2, 1].Value = "Contract Agreement";
+            worksheet.Cells[2, 2].Value = "Service Contract for 2026";
+
+            // ================= STYLING =================
+            using (var header = worksheet.Cells[1, 1, 1, 2])
+            {
+                header.Style.Font.Bold = true;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            return await package.GetAsByteArrayAsync();
+        }
         // =========================
         // Delete Document
         // =========================
@@ -305,5 +327,37 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
+        public async Task<MainResponse<Document>> deleteGroup(List<int> ids)
+        {
+            MainResponse<Document> response = new MainResponse<Document>();
+
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var deletedDocuments = await _unitOfWork.Documents.DeletePhysical(p => p.Id == id);
+                    if (deletedDocuments == null || !deletedDocuments.Any())
+                    {
+                        response.errors?.Add($"id = {id} not found");
+                        return response;
+                    }
+                    else
+                    {
+                        response.acceptedObjects = deletedDocuments.ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+            return response;
+        }
+
     }
+
+
+
 }

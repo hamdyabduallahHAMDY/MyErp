@@ -13,6 +13,7 @@ namespace MyErp.Core.Models
         public int NotInterested { get; set; }
         public int Interested { get; set; }
         public int NotResponding { get; set; }
+        public int Responding { get; set; }
         public int FollowUp { get; set; }
 
 

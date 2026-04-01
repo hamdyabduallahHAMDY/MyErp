@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -63,7 +64,7 @@ namespace MyErp.Core.Services
         // ==============================
         // ADD FAQ
         // ==============================
-        public async Task<MainResponse<FAQ>> addFAQ(List<FAQDTO> faqDTOs)
+        public async Task<MainResponse<FAQ>> addFAQ(FAQDTO faqDTOs)
         {
             MainResponse<FAQ> response = new MainResponse<FAQ>();
 
@@ -71,13 +72,40 @@ namespace MyErp.Core.Services
             {
                 var validList = await ValidateDTO.FAQDTO(faqDTOs);
 
-                List<FAQ> faqList =
-                    _mapper.Map<List<FAQ>>(validList.acceptedObjects);
-
+                List<FAQ> faqList = new List<FAQ>();
                 List<FAQ> rejectedFaqs =
                     _mapper.Map<List<FAQ>>(validList.rejectedObjects);
 
-                if (faqList != null && faqList.Count > 0)
+                foreach (var dto in validList.acceptedObjects)
+                {
+                    var faq = _mapper.Map<FAQ>(dto);
+
+                    //  FILE SAVE LOGIC 
+                    if (dto.Attachment != null && dto.Attachment.Length > 0)
+                    {
+                        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "upload_FAQ");
+
+                        if (!Directory.Exists(folderPath))
+                            Directory.CreateDirectory(folderPath);
+
+                        var fileName =  (dto.Attachment.FileName);
+
+                        var filePath = Path.Combine(folderPath, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await dto.Attachment.CopyToAsync(stream);
+                        }
+
+                        // Save relative path (best practice)
+                        faq.Attachment = "/upload_FAQ/" + fileName;
+                    }
+                        //===================================================
+
+                    faqList.Add(faq);
+                }
+
+                if (faqList.Count > 0)
                 {
                     await _unitOfWork.FAQs.Add(faqList);
                     response.acceptedObjects = faqList;
@@ -95,6 +123,7 @@ namespace MyErp.Core.Services
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
+
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);
 
@@ -103,7 +132,7 @@ namespace MyErp.Core.Services
         }
 
         //addFAQ BY Excel
-        public async Task<MainResponse<FAQ>> ImportFromExcel(IFormFile excelFile)
+        public async Task<MainResponse<FAQ>> ImportFromExcel(IFormFile excelFile , string createdby )
         {
             var response = new MainResponse<FAQ>();
 
@@ -153,7 +182,7 @@ namespace MyErp.Core.Services
 
                     // extra safety
                     //document.Attachment = null;
-
+                    document.CreatedBy = createdby;
                     docsToAdd.Add(document);
                 }
 
@@ -185,7 +214,7 @@ namespace MyErp.Core.Services
         // ==============================
         // UPDATE FAQ
         // ==============================
-        public async Task<MainResponse<FAQ>> updateFAQ(int id, List<FAQDTO> faqUpdated)
+        public async Task<MainResponse<FAQ>> updateFAQ(int id, FAQDTO faqUpdated)
         {
             var response = new MainResponse<FAQ>();
 
@@ -213,7 +242,7 @@ namespace MyErp.Core.Services
                 if (validList.acceptedObjects == null ||
                     validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update FAQ. Fix validation errors and try again.");
+                    response.errors.Add("No valid payload to update FAQ.");
 
                     if (validList.errors?.Any() == true)
                         response.errors.AddRange(validList.errors);
@@ -227,7 +256,49 @@ namespace MyErp.Core.Services
 
                 var dto = validList.acceptedObjects[0];
 
+                // ================= FILE HANDLING =================
+                if (dto.Attachment != null && dto.Attachment.Length > 0)
+                {
+                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "upload_FAQ");
+
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
+
+                    // 🔴 Delete old file
+                    if (!string.IsNullOrEmpty(existingFAQ.Attachment))
+                    {
+                        var oldPath = Path.Combine(
+                            Directory.GetCurrentDirectory(),
+                            existingFAQ.Attachment.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString())
+                        );
+
+                        if (File.Exists(oldPath))
+                            File.Delete(oldPath);
+                    }
+
+                    // 🟢 UNIQUE file name (VERY IMPORTANT)
+                    var fileName =  dto.Attachment.FileName;
+
+                    var filePath = Path.Combine(folderPath, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await dto.Attachment.CopyToAsync(stream);
+                    }
+
+                    existingFAQ.Attachment = "/upload_FAQ/" + fileName;
+                }
+                // =================================================
+
+                // 🧠 IMPORTANT: prevent overwriting Attachment with null
+                var oldFilePath = existingFAQ.Attachment;
+
                 _mapper.Map(dto, existingFAQ);
+
+                if (dto.Attachment == null)
+                {
+                    existingFAQ.Attachment = oldFilePath;
+                }
 
                 await _unitOfWork.FAQs.Update(existingFAQ);
 
@@ -244,14 +315,13 @@ namespace MyErp.Core.Services
             {
                 Logs.Log(ex.ToString());
                 response.errors.Add(ex.Message);
+
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);
             }
 
             return response;
-        }
-
-        // ==============================
+        }        // ==============================
         // DELETE FAQ
         // ==============================
         public async Task<MainResponse<FAQ>> deleteFAQ(int id)
@@ -269,6 +339,33 @@ namespace MyErp.Core.Services
             }
 
             response.acceptedObjects = new List<FAQ> { faq.First() };
+            return response;
+        }
+        public async Task<MainResponse<FAQ>> deleteGroup(List<int> ids)
+        {
+            MainResponse<FAQ> response = new MainResponse<FAQ>();
+
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var deletedDocuments = await _unitOfWork.FAQs.DeletePhysical(p => p.Id == id);
+                    if (deletedDocuments == null || !deletedDocuments.Any())
+                    {
+                        response.errors?.Add($"id = {id} not found");
+                        return response;
+                    }
+                    else
+                    {
+                        response.acceptedObjects = deletedDocuments.ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
             return response;
         }
     }

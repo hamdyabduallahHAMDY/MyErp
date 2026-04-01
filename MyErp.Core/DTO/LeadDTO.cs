@@ -21,11 +21,24 @@ namespace MyErp.Core.DTO
         public string? FeedBack { get; set; }
         public string? Website { get; set; }
         public string? Source { get; set; }
-
+      
     }
     public class LeadStatusCountDTO
     {
         public int Status { get; set; }
         public int Count { get; set; }
+    }
+    public class LeadsTodayByUserDTO
+    {
+        public string UserName { get; set; }
+        public int TotalLeadsToday { get; set; }
+        public int Cancel { get; set; }
+        public int NotInterested { get; set; }
+        public int Interested { get; set; }
+        public int NotResponding { get; set; }
+        public int Responding { get; set; }
+        public int FollowUp { get; set; }
+        public int Duplicated { get; set; }
+        public int NoAction { get; set; }
     }
 }

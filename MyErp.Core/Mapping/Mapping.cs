@@ -27,7 +27,8 @@ namespace MyErp.Core.Mapping
                     opt => opt.Ignore()); CreateMap<ToDo, ToDoDTO>()
                 .ForMember(d => d.ischecked, o => o.MapFrom(s => (int)s.ischecked));
 
-
+            CreateMap<FAQDTO, FAQ>()
+    .ForMember(dest => dest.Attachment, opt => opt.Ignore());
             CreateMap<CalenderTask, CalenderTaskDTO>().ReverseMap();
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
             CreateMap<Lead, LeadDTO>().ReverseMap();

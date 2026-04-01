@@ -21,5 +21,8 @@ namespace MyErp.Core.Models
         public string? FeedBack { get; set; }
         public string? Website { get; set; }
         public string? Source { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? LastEdited { get; set; } 
+
     }
 }

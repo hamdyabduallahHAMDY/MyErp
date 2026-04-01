@@ -29,6 +29,38 @@ namespace MyErp.Core.Services
             _mapper = mapper;
         }
 
+        public async Task<byte[]> GenerateCustomerExcelTemplate()
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Customer Template");
+
+            // ================= HEADERS =================
+            worksheet.Cells[1, 1].Value = "Name";
+            worksheet.Cells[1, 2].Value = "TaxRegistrationNumber";
+            worksheet.Cells[1, 3].Value = "CompanyName";
+            worksheet.Cells[1, 4].Value = "Phone";
+            worksheet.Cells[1, 5].Value = "AnyDesk";
+            worksheet.Cells[1, 6].Value = "POC";
+
+            // ================= DEMO ROW =================
+            worksheet.Cells[2, 1].Value = "Ahmed Ali";
+            worksheet.Cells[2, 2].Value = "123456789";
+            worksheet.Cells[2, 3].Value = "Tech Solutions";
+            worksheet.Cells[2, 4].Value = "01012345678";
+            worksheet.Cells[2, 5].Value = "123-456-789";
+            worksheet.Cells[2, 6].Value = "Mohamed Hassan";
+
+            // ================= STYLING =================
+            using (var header = worksheet.Cells[1, 1, 1, 6])
+            {
+                header.Style.Font.Bold = true;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            return await package.GetAsByteArrayAsync();
+        }
+
         public async Task<MainResponse<Customer>> getCustomersList()
         {
             MainResponse<Customer> response = new MainResponse<Customer>();
@@ -102,7 +134,7 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Customer>> ImportFromExcel(IFormFile excelFile)
+        public async Task<MainResponse<Customer>> ImportFromExcel(IFormFile excelFile , string currentuser)
         {
             var response = new MainResponse<Customer>();
 
@@ -138,7 +170,7 @@ namespace MyErp.Core.Services
                     var CompanyName = worksheet.Cells[r, 3].Text?.Trim();
                     var Phone = worksheet.Cells[r, 4].Text?.Trim();
                     var AnyDesk = worksheet.Cells[r, 5].Text?.Trim();
-                    var POC = worksheet.Cells[r, 5].Text?.Trim();
+                    var POC = worksheet.Cells[r, 6].Text?.Trim();
 
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
@@ -152,11 +184,12 @@ namespace MyErp.Core.Services
                         AnyDesk = AnyDesk,
                         Phone = Phone,
                         POC = POC,
+                        
                     };
 
                     //  AutoMapper mapping
                     var document = _mapper.Map<Customer>(dto);
-
+                    document.CreatedBy = currentuser;
                     // extra safety
                     //document.Attachment = null;
 
@@ -186,7 +219,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
 
         public async Task<MainResponse<Customer>> addCustomer(List<CustomerDTO> customer)
         {
@@ -233,6 +265,32 @@ namespace MyErp.Core.Services
             return response;
         }
 
+        public async Task<MainResponse<Customer>> deleteGroup(List<int> ids)
+        {
+            MainResponse<Customer> response = new MainResponse<Customer>();
 
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var deletedTodos = await _unitOfWork.Customers.DeletePhysical(p => p.Id == id);
+                    if (deletedTodos == null || !deletedTodos.Any())
+                    {
+                        response.errors?.Add($"id = {id} not found");
+                        return response;
+                    }
+                    else
+                    {
+                        response.acceptedObjects = deletedTodos.ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+            return response;
+        }
     }
 }

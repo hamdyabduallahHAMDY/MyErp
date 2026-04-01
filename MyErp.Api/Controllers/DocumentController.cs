@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Protocols;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -79,11 +81,12 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         [HttpPost("importExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var result = await DocumentServices.ImportFromExcel(file);
+            var createdby = User.Identity.Name;
+            var result = await DocumentServices.ImportFromExcel(file, createdby);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Document>
@@ -91,7 +94,17 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
+        [HttpGet("template/document")]
+        public async Task<IActionResult> DownloadDocumentTemplate()
+        {
+            var fileBytes = await DocumentServices.GenerateDocumentExcelTemplate();
 
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Document_Template.xlsx"
+            );
+        }
         // DELETE
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteDocument(int id)
@@ -114,6 +127,15 @@ namespace MyErp.Api.Controllers
 
             var bytes = System.IO.File.ReadAllBytes(path);
             return File(bytes, "application/octet-stream", fileName);
+        }
+        [HttpDelete("deleteGroupById")]
+        public async Task<IActionResult> DeleteGroupCust(List<int> id)
+        {
+            var result = await DocumentServices.deleteGroup(id);
+
+            var resultWithStatusCode = ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpDelete");
+
+            return resultWithStatusCode;
         }
     }
 }

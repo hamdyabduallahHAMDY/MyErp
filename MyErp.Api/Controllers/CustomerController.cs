@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
@@ -23,7 +24,18 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             CustomerServices = new CustomerServices(unitOfWork, _mapper);
         }
+        [HttpGet("template/customer")]
+        public async Task<IActionResult> DownloadCustomerTemplate()
+        {
 
+            var fileBytes = await CustomerServices.GenerateCustomerExcelTemplate();
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Customer_Template.xlsx"
+            );
+        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetCustomerlist()
         {
@@ -53,10 +65,11 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         [HttpPost("add")]
         public async Task<IActionResult> putCustomer([FromBody] List<CustomerDTO> customerUpdated)
         {
+            var currentuser = User.Identity.Name;
             var result = await CustomerServices.addCustomer(customerUpdated);
 
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPost");
@@ -67,15 +80,26 @@ namespace MyErp.Api.Controllers
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var result = await CustomerServices.ImportFromExcel(file);
+            var currentuser = User.Identity.Name;
+
+            var result = await CustomerServices.ImportFromExcel(file , currentuser);
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }
 
         [HttpDelete("deleteById")]
-        public async Task<IActionResult> putCustomer(int id)
+        public async Task<IActionResult> DeleteCust(int id)
         {
             var result = await CustomerServices.deleteUser(id);
+
+            var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpDelete");
+
+            return resultWithStatusCode;
+        }
+        [HttpDelete("deleteGroupById")]
+        public async Task<IActionResult> DeleteGroupCust(List<int> id)
+        {
+            var result = await CustomerServices.deleteGroup(id);
 
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpDelete");
 

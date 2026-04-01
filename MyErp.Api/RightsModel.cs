@@ -9,17 +9,17 @@ namespace MyErp.Api
     }
     public class RightsModelServices
     {
-        public  (string currentUser, List<string> allowedUsers, bool isAuthenticated) GetAccessData(ClaimsPrincipal user)
+        public (string currentUser, List<string> allowedUsers, bool isAuthenticated) GetAccessData(ClaimsPrincipal user)
         {
             var currentUser = user.Identity?.Name;
-
+            
             if (string.IsNullOrEmpty(currentUser))
             {
                 return (null, new List<string>(), false);
             }
 
             var rightsJson = user.Claims
-                .FirstOrDefault(c => c.Type == "Rights")?.Value;
+                .FirstOrDefault(c => c.Type == "allowance")?.Value;
 
             List<string> allowedUsers = new List<string>();
 

@@ -27,6 +27,20 @@ namespace MyErp.Api.Controllers
             ToDoServices = new ToDoServices(unitOfWork, _mapper);
           //  _accessService = accessService;
         }
+
+        [HttpGet("template/todo")]
+        public async Task<IActionResult> DownloadToDoTemplate()
+        {
+            var fileBytes = await ToDoServices.GenerateToDoExcelTemplate();
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "ToDo_Template.xlsx"
+            );
+        }
+
+
         [HttpGet("getAll")]
         public async Task<IActionResult> GetToDoList()
         {

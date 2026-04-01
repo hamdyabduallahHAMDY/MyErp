@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,8 @@ namespace MyErp.Core.DTO
 {
     public  class FAQDTO
     {
-        public string Error { get; set; }
-        public string Details { get; set; }
+        public string? Error { get; set; }
+        public string? Details { get; set; }
+        public IFormFile? Attachment { get; set; }
     }
 }

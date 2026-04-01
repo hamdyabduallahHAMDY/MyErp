@@ -15,49 +15,42 @@ namespace MyErp.Core.Validation
             bool hasError = false;
             foreach (var customer in insertDTO)
             {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where companyName = '{customer.TaxRegistrationNumber}'");
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Customer>($"select * from Customers where Name = '{customer.Name}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
-                    response.rejectedObjects.Add(customer);
+                    response.errors?.Add("this Customer Exist before , change the Name");
+                    response.rejectedObjects?.Add(customer);
                     hasError = true;
                     continue;
                 }
                 if (!customer.AnyDesk.IsDigitsOrPlusOnly())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
-                    response.rejectedObjects.Add(customer);
+                    response.errors?.Add("AnyDesk must be numbers only");
+                    response.rejectedObjects?.Add(customer);
                     hasError = true;
                     continue;
                 }
                 if (!customer.Name.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.errors.Add("Name must be numbers only ");
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
                 if (!customer.POC.IsDigitsOrPlusOnly())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.errors.Add("POC must be no. only");
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
                 }
                 if (!customer.Phone.IsDigitsOrPlusOnly())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
+                    response.errors.Add("POC must be no. only");
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
-                }
-                if (!customer.Phone.IsDigitsOrPlusOnly())
-                {
-                    response.errors.Add(err.ObjectErrorInvExist(customer.Name));
-                    response.rejectedObjects.Add(customer);
-                    hasError = true;
-                    continue;
-                }
+                }               
                 if (hasError)
                 {
                     continue;
@@ -76,7 +69,7 @@ namespace MyErp.Core.Validation
                 var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{calen.Title}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
-                    response.errors?.Add(err.ObjectErrorInvExist(calen.Title));
+                    response.errors?.Add("This Title is found before");
                     response.rejectedObjects?.Add(calen);
                     hasError = true;
                     continue;
@@ -123,14 +116,14 @@ namespace MyErp.Core.Validation
             {
                 if (!(todo.Title.IsStringValidation()))
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(todo.Title));
+                    response.errors?.Add("Tilte must be string only");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
                 }
                 if (!todo.Description.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(todo.Description));
+                    response.errors.Add("Description must be string only");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
@@ -154,7 +147,7 @@ namespace MyErp.Core.Validation
                 var DBtodo = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from ToDos where Title = '{todo.Title}'");
                 if (DBtodo.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(todo.Title));
+                    response.errors.Add("Tilte is found before in database ");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
                     continue;
@@ -168,41 +161,37 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-        public async static Task<MainResponse<FAQDTO>> FAQDTO(List<FAQDTO> insertDTO, bool isupdate = false)
+        public async static Task<MainResponse<FAQDTO>> FAQDTO(FAQDTO faq, bool isupdate = false)
         {
             MainResponse<FAQDTO> response = new MainResponse<FAQDTO>();
             Errors<FAQDTO> err = new Errors<FAQDTO>();
             bool hasError = false;
-            foreach (var faq in insertDTO)
-            {
+           
                 var DBfaq = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{faq.Error}'");
                 if (DBfaq.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.errors.Add("this FAQ name is found before ");
                     response.rejectedObjects.Add(faq);
                     hasError = true;
-                    continue;
                 }
                 if (!faq.Error.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.errors.Add("Error must be string only ");
                     response.rejectedObjects.Add(faq);
                     hasError = true;
-                    continue;
                 }
                 if (!faq.Details.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(faq.Error));
+                    response.errors.Add("Details must be string only");
                     response.rejectedObjects.Add(faq);
                     hasError = true;
-                    continue;
                 }
                 if (hasError)
                 {
-                    continue;
-                }
-                response.acceptedObjects.Add(faq);
+                return response;
             }
+                response.acceptedObjects.Add(faq);
+            
             return response;
         }
         public async static Task<MainResponse<DocumentDTO>> DocumentDTO(DocumentDTO doc, bool isupdate = false)
@@ -214,20 +203,20 @@ namespace MyErp.Core.Validation
                 var DBcustomer = await ADO.GetExecuteQueryMySql<Models.Document>($"select * from Documents where Name = '{doc.Name}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
+                    response.errors.Add("This Documnet Name is found before ");
                     response.rejectedObjects.Add(doc);
                     hasError = true;
 
                 }
                 if (!doc.Name.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
-                    response.rejectedObjects.Add(doc);
+                    response.errors?.Add("Name must be string only");
+                    response.rejectedObjects?.Add(doc);
                     hasError = true;
                 }
                 if (!doc.subject.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(doc.Name));
+                    response.errors.Add("Subject must be string only ");
                     response.rejectedObjects.Add(doc);
                     hasError = true;
                 }
@@ -273,7 +262,7 @@ namespace MyErp.Core.Validation
                 var DBuser = await ADO.GetExecuteQueryMySql<Models.Contract>($"select * from Contracts  where regestrationNumber = '{user.regestrationNumber}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(user.CompanyName));
+                    response.errors.Add("This Company with regstrationnumber is found before ");
                     response.rejectedObjects.Add(user);
                     hasError = true;
                     continue;
@@ -287,7 +276,7 @@ namespace MyErp.Core.Validation
                 }
                 if (!user.CompanyName.IsStringValidation())
                 {
-                    response.errors?.Add(err.ObjectErrorInvExist(user.CompanyName));
+                    response.errors?.Add("CompanyName must be string only");
                     response.rejectedObjects?.Add(user);
                     hasError = true;
                     continue;
@@ -308,7 +297,7 @@ namespace MyErp.Core.Validation
             {
                 if (!ticket.Description.IsStringValidation() && !isupdate)
                 {
-                    response.errors?.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.errors?.Add("Description must be string only ");
                     response.rejectedObjects?.Add(ticket);
                     hasError = true;
                     return response;
@@ -316,14 +305,14 @@ namespace MyErp.Core.Validation
                 var DBuser = await ADO.GetExecuteQueryMySql<Models.Ticket>($"select * from Tickets  where Description = '{ticket.Description}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(ticket.TaxRegistrationId.ToString()));
+                    response.errors.Add("this Description is found before in database ");
                     response.rejectedObjects.Add(ticket);
                     hasError = true;
                     return response;
                 }
                 if (!ticket.TaxRegistrationName.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.errors.Add("taxregistrationname must be string only ");
                     response.rejectedObjects.Add(ticket);
                     hasError = true;
                     return response;
@@ -339,7 +328,7 @@ namespace MyErp.Core.Validation
                 //}
                 if (!ticket.TaxRegistrationName.IsStringValidation())
                 {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(ticket.Description));
+                    response.errors.Add("TaxRegistrationName must be string only");
                     response.rejectedObjects.Add(ticket);
                     hasError = true;
                     return response;
@@ -371,21 +360,21 @@ namespace MyErp.Core.Validation
                 var DBuser = await ADO.GetExecuteQueryMySql<Models.Lead>($"select * from Leads  where Name = '{lead.Name}'");
                 if (DBuser.Count() > 0 && !isupdate)
                 {
-                    response.errors.Add(err.ObjectErrorInvExist(lead.Name));
-                    response.rejectedObjects.Add(lead);
+                    response.errors?.Add("Lead with this name is found before in database ");
+                    response.rejectedObjects?.Add(lead);
                     hasError = true;
                     return response;
                 }
-                if (!lead.Name.IsStringValidation())
-                {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(lead.Name));
-                    response.rejectedObjects.Add(lead);
-                    hasError = true;
-                    return response;
-                }
+                //if (!lead.Name.IsStringValidation())
+                //{
+                //    response.errors.Add("Lead name msut be string only ");
+                //    response.rejectedObjects.Add(lead);
+                //    hasError = true;
+                //    return response;
+                //}
                 if (!lead.PhoneNo.IsDigitsOrPlusOnly())
                 {
-                    response.errors.Add(err.ObjectIsStringAndNumbersOnly(lead.Name));
+                    response.errors.Add("Lead Phone No must be digits only");
                     response.rejectedObjects.Add(lead);
                     hasError = true;
                     return response;
@@ -401,7 +390,7 @@ namespace MyErp.Core.Validation
                 {
                     return response;
                 }
-                response.acceptedObjects.Add(lead);
+                response.acceptedObjects?.Add(lead);
             }
             return response;
 
@@ -415,17 +404,17 @@ namespace MyErp.Core.Validation
             Errors<EmailDTO> err = new Errors<EmailDTO>();
             bool hasError = false;
 
-            var DBemail = await ADO.GetExecuteQueryMySql<Models.Email>($"select * from Emails where subject = '{email.Subject}'");
-            if (DBemail.Count() > 0 && !isupdate)
-            {
-                response.errors.Add(err.ObjectErrorInvExist(email.Subject));
-                response.rejectedObjects.Add(email);
-                hasError = true;
+            //var DBemail = await ADO.GetExecuteQueryMySql<Models.Email>($"select * from Emails where subject = '{email.Subject}'");
+            //if (DBemail.Count() > 0 && !isupdate)
+            //{
+            //    response.errors.Add("This email with this subject is ");
+            //    response.rejectedObjects.Add(email);
+            //    hasError = true;
 
-            }
+            //}
             if (!email.Subject.IsStringValidation())
             {
-                response.errors.Add(err.ObjectErrorInvExist(email.Subject));
+                response.errors.Add("Subject must be string only ");
                 response.rejectedObjects.Add(email);
                 hasError = true;
             }
@@ -447,21 +436,21 @@ namespace MyErp.Core.Validation
                 var DBgoal = await ADO.GetExecuteQueryMySql<Models.Goal>($"select * from Goals where Description = '{goal.Description}' and assingedto = '{goal.AssignedTo}'");
                 if (DBgoal.Count() > 0 && !isupdate)
                 {
-                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.errors?.Add("Description is found  before in database ");
                     response.rejectedObjects?.Add(goal);
                     hasError = true;
                     continue;
                 }
                 if (!goal.Description.IsStringValidation())
                 {
-                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.errors?.Add("Description must be string only");
                     response.rejectedObjects?.Add(goal);
                     hasError = true;
                     continue;
                 }
                 if (!goal.AssignedTo.IsStringValidation())
                 {
-                    response.errors?.Add(err.ObjectErrorInvExist(goal.Description));
+                    response.errors?.Add("AssignedTo must be string only");
                     response.rejectedObjects?.Add(goal);
                     hasError = true;
                     continue;

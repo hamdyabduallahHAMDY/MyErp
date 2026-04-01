@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Logger;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using MyErp.Core.HTTP;
 using MyErp.Core.Models;
 using OfficeOpenXml;
 using System.IdentityModel.Tokens.Jwt;
@@ -21,6 +23,85 @@ namespace MyErp.Api.Controllers
         {
             _userManager = userManager;
             _configuration = configuration;
+        }
+        [HttpGet("template/users")]
+        public async Task<IActionResult> DownloadUsersTemplate()
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Users Template");
+
+            // ================= HEADERS =================
+            worksheet.Cells[1, 1].Value = "Username";
+            worksheet.Cells[1, 2].Value = "Email";
+            worksheet.Cells[1, 3].Value = "Password";
+            worksheet.Cells[1, 4].Value = "Rights";
+            worksheet.Cells[1, 5].Value = "TaxId";
+
+            // ================= DEMO ROW =================
+            worksheet.Cells[2, 1].Value = "user1";
+            worksheet.Cells[2, 2].Value = "user1@test.com";
+            worksheet.Cells[2, 3].Value = "P@ssw0rd123";
+            worksheet.Cells[2, 4].Value = "{\"allowance\":[\"user2\",\"user3\"]}";
+            worksheet.Cells[2, 5].Value = "123456789";
+
+            // ================= STYLING =================
+            using (var header = worksheet.Cells[1, 1, 1, 5])
+            {
+                header.Style.Font.Bold = true;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            // ================= RETURN FILE =================
+            var fileBytes = await package.GetAsByteArrayAsync();
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Users_Template.xlsx"
+            );
+        }
+        [HttpDelete("delete-group-users")]
+        public async Task<IActionResult> DeleteGroupUsers([FromBody] List<string> usernames)
+        {
+            var response = new
+            {
+                acceptedObjects = new List<string>(),
+                errors = new List<string>()
+            };
+
+            try
+            {
+                if (usernames == null || !usernames.Any())
+                    return BadRequest("Usernames list is empty.");
+
+                foreach (var username in usernames)
+                {
+                    var user = await _userManager.FindByNameAsync(username);
+
+                    if (user == null)
+                    {
+                        response.errors.Add($"User '{username}' not found.");
+                        continue;
+                    }
+
+                    var result = await _userManager.DeleteAsync(user);
+
+                    if (!result.Succeeded)
+                    {
+                        response.errors.Add($"User '{username}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                        continue;
+                    }
+
+                    response.acceptedObjects.Add(username);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         // ================= IMPORT USERS FROM EXCEL =================
         [HttpPost("import-users-excel")]
@@ -75,7 +156,7 @@ namespace MyErp.Api.Controllers
                         Rights = rights,
                         registrationTaxid = taxId
                     };
-
+                    
                     var result = await _userManager.CreateAsync(user, password);
 
                     if (!result.Succeeded)
@@ -113,7 +194,8 @@ namespace MyErp.Api.Controllers
             {
                 Email = model.Email,
                 UserName = model.Username,
-                Rights = model.Rights
+                Rights = model.Rights,
+                allowance = model.allowance
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -135,6 +217,8 @@ namespace MyErp.Api.Controllers
 
             var authClaims = new List<Claim>
             {
+                new Claim("allowance", user.allowance ?? ""),
+                new Claim(ClaimTypes.NameIdentifier ,user.Id),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim("Rights", user.Rights ?? ""),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
@@ -219,7 +303,7 @@ namespace MyErp.Api.Controllers
                 return NotFound("User not found.");
 
             user.Rights = model.Rights;
-
+            user.allowance = model.allowance;
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
@@ -335,10 +419,11 @@ namespace MyErp.Api.Controllers
         }
     // ================= DTOs =================
 
-    public record RegisterModel(string Username, string Email, string Password , string Rights);
+    public record RegisterModel(string Username, string Email, string Password , string Rights , string allowance);
     public record LoginModel(string Username, string Password);
-    public record UpdateRightsModel(string Username, string Rights);
-    public record UpdateUserByNameModel(string Id, string? Email, string? NewUsername, string? Rights);
+ 
+    public record UpdateRightsModel(string Username, string Rights , string allowance);
+    public record UpdateUserByNameModel(string Id, string? Email, string? NewUsername, string? Rights );
     public record ChangePasswordByNameModel(
         string Username,
         string CurrentPassword,

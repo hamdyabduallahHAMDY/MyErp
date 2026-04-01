@@ -31,6 +31,7 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
+
         public byte[] GenerateExcelTemplate()
         {
             using (var package = new ExcelPackage())
@@ -41,16 +42,17 @@ namespace MyErp.Core.Services
                 var headers = new List<string>
         {
             "Name",
-            "PhoneNo",
+            "Phone",
             "Email",
-            "CompanyName",
-            "AssignedTo",
+            "Company",
             "Status",
+            "AssignedTo",
             "Country",
             "Notes",
             "DueDate",
             "FeedBack",
-            "Website"
+            "Website",
+            "Owner"
         };
 
                 // Add headers
@@ -75,13 +77,14 @@ namespace MyErp.Core.Services
                 worksheet.Cells[2, 2].Value = "01000000000";
                 worksheet.Cells[2, 3].Value = "john@email.com";
                 worksheet.Cells[2, 4].Value = "ABC Company";
-                worksheet.Cells[2, 5].Value = "ahmed";
-                worksheet.Cells[2, 6].Value = "follow-up"; // Status
+                worksheet.Cells[2, 5].Value = "follow-up"; // Status
+                worksheet.Cells[2, 6].Value = "71ce24f1-d875-427f-b1df-930f5895735d";
                 worksheet.Cells[2, 7].Value = "EG";
                 worksheet.Cells[2, 8].Value = "Important client";
                 worksheet.Cells[2, 9].Value = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd");
                 worksheet.Cells[2, 10].Value = "Follow up";
                 worksheet.Cells[2, 11].Value = "www.abc.com";
+                worksheet.Cells[2, 12].Value = "Saweras";
 
                 return package.GetAsByteArray();
             }
@@ -136,11 +139,18 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<LeadsStatusbyAssignedUser>> GetLeadsStatusByAssignedUser()
+        public async Task<MainResponse<LeadsStatusbyAssignedUser>> GetLeadsStatusByAssignedUser(List<string> allowances)
         {
             MainResponse<LeadsStatusbyAssignedUser> response = new MainResponse<LeadsStatusbyAssignedUser>();
 
-            var leads = await _unitOfWork.Leads.GetAll(l => l.AssignedTo != null);
+            var allLeads = await _unitOfWork.Leads.GetAll();
+
+            // Filter in memory (safe)
+            var leads = allLeads
+                .Where(l =>
+                    allowances.Contains(l.CreatedBy) ||
+                    allowances.Contains(l.AssignedTo))
+                .ToList();
 
             var users = leads
                 .Select(l => l.AssignedTo)
@@ -159,6 +169,7 @@ namespace MyErp.Core.Services
                     NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
                     Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
                     NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
+                    Responding = userLeads.Count(l => l.Status == LeadStatus.responding),
                     FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
 
                 });
@@ -198,6 +209,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
         public async Task<MainResponse<Lead>> GetLead(int id)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -213,6 +225,7 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Lead> { user };
             return response;
         }
+
         public async Task<MainResponse<Lead>> GetLeadByStatus(int status)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -228,22 +241,20 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
-      public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
 
-
-
-      //  public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
+        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated, string createdby)
         {
             var response = new MainResponse<Lead>();
 
             try
             {
                 var validList = await ValidateDTO.LeadDTO(userUpdated, true);
-
-                var existingLeads = await _unitOfWork.Leads.GetFirst(a => a.Id == id);
+                var existingLeads = await _unitOfWork.Leads.GetById(id);
+                //var existingLeads = await _unitOfWork.Leads.GetFirst(a => a.Id == id);
                 if (existingLeads is null)
                 {
                     response.errors?.Add($"Cannot find lead with ID {id}.");
+
                     if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
                         response.errors?.AddRange(validList.errors);
 
@@ -256,7 +267,9 @@ namespace MyErp.Core.Services
                 if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
                 {
                     response.errors?.Add("No valid payload to update this Lead. Fix validation errors and try again.");
-                    if (validList.errors?.Any() == true) response.errors?.AddRange(validList.errors);
+
+                    if (validList.errors?.Any() == true)
+                        response.errors?.AddRange(validList.errors);
 
                     if (validList.rejectedObjects?.Any() == true)
                         response.rejectedObjects?.AddRange(_mapper.Map<List<Lead>>(validList.rejectedObjects));
@@ -265,12 +278,24 @@ namespace MyErp.Core.Services
                 }
 
                 var dto = validList.acceptedObjects[0];
-               
+
+                // Detect status change BEFORE mapping
+                bool statusChanged = dto.Status != existingLeads.Status;
+
+                // Map new values
                 _mapper.Map(dto, existingLeads);
+
+                // Business rule: update LastEdited only if status changed
+                if (statusChanged)
+                {
+                    existingLeads.LastEdited = DateTime.Now;
+                }
+
+                // Keep your existing logic
                 existingLeads.CreatedBy = createdby;
-                
+
                 await _unitOfWork.Leads.Update(existingLeads);
-                
+
                 response.acceptedObjects ??= new List<Lead>();
                 response.acceptedObjects.Add(existingLeads);
 
@@ -284,11 +309,13 @@ namespace MyErp.Core.Services
             {
                 Logs.Log(ex.ToString());
                 response.errors?.Add(ex.Message);
-                if (ex.InnerException != null) response.errors?.Add(ex.InnerException.Message);
+                if (ex.InnerException != null)
+                    response.errors?.Add(ex.InnerException.Message);
             }
 
             return response;
         }
+
         public async Task<MainResponse<Lead>> AddLead(LeadDTO dto, string name)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -329,6 +356,7 @@ namespace MyErp.Core.Services
                 return response;
             }
         }
+
         public async Task<MainResponse<Lead>> DeleteLead(int id)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -344,7 +372,8 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Lead> { user.First() };
             return response;
         }
-        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile)
+
+        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile , string CreatedBy)
         {
             var response = new MainResponse<Lead>();
 
@@ -401,7 +430,7 @@ namespace MyErp.Core.Services
 
                     var dto = new LeadDTO
                     {
-                        Name = owner,
+                        Name = name,
                         PhoneNo = phone,
                         Email = email,
                         CompanyName = company,
@@ -409,11 +438,14 @@ namespace MyErp.Core.Services
                         Status = ParseLeadStatus(statusText),
                         Country = country,
                         Notes = notes,
+                        Website = Website,
                         DueDate = dueDate,
-                        FeedBack = feedback
+                        FeedBack = feedback,
+                        
                     };
                     var lead = _mapper.Map<Lead>(dto);
-
+                    lead.CreatedBy = CreatedBy;
+                    lead.CreatedAt = DateTime.Now;
                     Leads.Add(lead);
                 }
 
@@ -454,6 +486,7 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
+
         public async Task<MainResponse<LeadStatusCountDTO>> GetNoOfLeadsByStatus(List<string> allowedUsers)
         {
             MainResponse<LeadStatusCountDTO> response = new MainResponse<LeadStatusCountDTO>();
@@ -497,6 +530,49 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
+        public async Task<MainResponse<LeadsTodayByUserDTO>> GetLeadsTodayByUsers(string created)
+        {
+            MainResponse<LeadsTodayByUserDTO> response = new MainResponse<LeadsTodayByUserDTO>();
+
+            try
+            {
+                var today = DateTime.Today;
+
+                var leads = await _unitOfWork.Leads.GetAll(
+                    l => l.LastEdited >= today && l.LastEdited < today.AddDays(1) && l.AssignedTo == created
+                );
+
+                var users = leads
+                    .Select(l => l.CreatedBy)
+                    .Where(x => !string.IsNullOrEmpty(x))
+                    .Distinct();
+                var result = new LeadsTodayByUserDTO
+                {
+                        UserName = created,
+                        Responding = leads.Count(l => l.Status == LeadStatus.responding),
+                    TotalLeadsToday = leads.Count(),
+                        Cancel = leads.Count(l => l.Status == LeadStatus.Cancel),
+                        NotInterested = leads.Count(l => l.Status == LeadStatus.NotInterested),
+                        Interested = leads.Count(l => l.Status == LeadStatus.Interested),
+                        NotResponding = leads.Count(l => l.Status == LeadStatus.NotResponding),
+                        FollowUp = leads.Count(l => l.Status == LeadStatus.FollowUp),
+                        Duplicated = leads.Count(l => l.Status == LeadStatus.Duplicated),
+                        NoAction = leads.Count(l => l.Status == LeadStatus.NoAction)
+                    };
+                
+
+                response.acceptedObjects?.Add( result);
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+
+            return response;
+        }
+
         private LeadStatus ParseLeadStatus(string status)
         {
             if (string.IsNullOrWhiteSpace(status))

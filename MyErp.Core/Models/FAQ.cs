@@ -8,7 +8,8 @@ namespace MyErp.Core.Models
 {
     public class FAQ : Common
     {
-        public string Error { get; set; }
-        public string Details { get; set; }
+        public string? Error { get; set; }
+        public string? Details { get; set; }
+        public string? Attachment { get; set; }
     }
 }

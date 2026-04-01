@@ -22,8 +22,39 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
-        // GET ALL (with Daily reset)
 
+
+        public async Task<byte[]> GenerateToDoExcelTemplate()
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("ToDo Template");
+
+            // ================= HEADERS =================
+            worksheet.Cells[1, 1].Value = "Title";
+            worksheet.Cells[1, 2].Value = "Description";
+            worksheet.Cells[1, 3].Value = "AssignedTo";
+            worksheet.Cells[1, 4].Value = "CreatedBy";
+            worksheet.Cells[1, 5].Value = "ischecked";
+
+            // ================= DEMO ROW =================
+            worksheet.Cells[2, 1].Value = "Finish ERP Module";
+            worksheet.Cells[2, 2].Value = "Complete ToDo API and UI";
+            worksheet.Cells[2, 3].Value = "user1";
+            worksheet.Cells[2, 4].Value = "admin";
+            worksheet.Cells[2, 5].Value = 0;
+
+            // ================= STYLING (optional but nice 👀) =================
+            using (var range = worksheet.Cells[1, 1, 1, 5])
+            {
+                range.Style.Font.Bold = true;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            return await package.GetAsByteArrayAsync();
+        }
+
+        // GET ALL (with Daily reset)
         public async Task<MainResponse<ToDo>> GetAll(string allowedUsers)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();

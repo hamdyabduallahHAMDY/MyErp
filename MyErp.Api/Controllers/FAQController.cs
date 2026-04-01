@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
@@ -6,6 +7,7 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using OfficeOpenXml;
 
 namespace MyErp.Api.Controllers
 {
@@ -55,7 +57,7 @@ namespace MyErp.Api.Controllers
         // UPDATE FAQ
         // ==============================
         [HttpPut("updateById")]
-        public async Task<IActionResult> PutFAQ(int id, [FromBody] List<FAQDTO> faqUpdated)
+        public async Task<IActionResult> PutFAQ(int id, [FromForm] FAQDTO faqUpdated)
         {
             var result = await FAQServices.updateFAQ(id, faqUpdated);
 
@@ -69,7 +71,7 @@ namespace MyErp.Api.Controllers
         // ADD FAQ
         // ==============================
         [HttpPost("add")]
-        public async Task<IActionResult> AddFAQ([FromBody] List<FAQDTO> faqDTOs)
+        public async Task<IActionResult> AddFAQ([FromForm] FAQDTO faqDTOs)
         {
             var result = await FAQServices.addFAQ(faqDTOs);
 
@@ -78,11 +80,12 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var result = await FAQServices.ImportFromExcel(file);
+            var created = User.Identity.Name;
+            var result = await FAQServices.ImportFromExcel(file, created);
             var resultWithStatusCode = ResponseStatusCode<FAQ>.GetApiResponseCode(result, "HttpPost");
             return resultWithStatusCode;
         }
@@ -99,6 +102,53 @@ namespace MyErp.Api.Controllers
                 ResponseStatusCode<FAQ>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
+           }
+        [HttpGet("template/faq")]
+        public async Task<IActionResult> DownloadFAQTemplate()
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("FAQ Template");
+
+            // ================= HEADERS =================
+            worksheet.Cells[1, 1].Value = "Error";
+            worksheet.Cells[1, 2].Value = "Details";
+
+            // ================= DEMO ROW =================
+            worksheet.Cells[2, 1].Value = "Login Failed";
+            worksheet.Cells[2, 2].Value = "Incorrect username or password";
+
+            // ================= STYLING =================
+            using (var header = worksheet.Cells[1, 1, 1, 2])
+            {
+                header.Style.Font.Bold = true;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            var fileBytes = await package.GetAsByteArrayAsync();
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "FAQ_Template.xlsx"
+            );
         }
+
+
+        [HttpDelete("deleteGroupById")]
+        public async Task<IActionResult> DeleteGroupCust(List<int> id)
+        {
+            var result = await FAQServices.deleteGroup(id);
+
+            var resultWithStatusCode = ResponseStatusCode<FAQ>.GetApiResponseCode(result, "HttpDelete");
+
+            return resultWithStatusCode;
+        }
+
+
+
     }
+
+
+
 }

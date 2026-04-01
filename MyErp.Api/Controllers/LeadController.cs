@@ -69,7 +69,10 @@ namespace MyErp.Api.Controllers
         [HttpGet("getLeadsStatusbyAssignedUser")]
         public async Task<IActionResult> getLeadsStatusbyAssignedUser()
         {
-            var result = await LeadServices.GetLeadsStatusByAssignedUser();
+            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
+
+
+            var result = await LeadServices.GetLeadsStatusByAssignedUser(allowedUsers);
 
             var resultWithStatusCode =
                 ResponseStatusCode<LeadsStatusbyAssignedUser>.GetApiResponseCode(result, "HttpGet");
@@ -128,7 +131,16 @@ namespace MyErp.Api.Controllers
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var result = await LeadServices.ImportFromExcel(file);
+            var currentUser = User.Identity?.Name;
+            if (currentUser == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "You must log in first."
+                });
+            }
+
+            var result = await LeadServices.ImportFromExcel(file , currentUser);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
@@ -180,6 +192,15 @@ namespace MyErp.Api.Controllers
                 ResponseStatusCode<LeadStatusCountDTO>.GetApiResponseCode(result, "HttpGet");
 
             return resultWithStatusCode;
+        }
+        [HttpGet("leads/today-by-user")]
+        public async Task<IActionResult> GetLeadsTodayByUsers()
+        {
+            var user = User.Identity?.Name;
+            var result = await LeadServices.GetLeadsTodayByUsers( user);
+
+            return ResponseStatusCode<LeadsTodayByUserDTO>
+                .GetApiResponseCode(result, "HttpGet");
         }
 
         [HttpGet("getByResponse")]

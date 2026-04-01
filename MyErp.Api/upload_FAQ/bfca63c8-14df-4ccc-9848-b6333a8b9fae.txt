@@ -1,0 +1,1 @@
+Server=DESKTOP-KKM3BU9\BOLA;Database=fashionTEst;TrustServerCertificate=true;Encrypt=False;Integrated Security=False;User Id=sa;Password=Pass@word

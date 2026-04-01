@@ -61,7 +61,7 @@ namespace MyErp.Core.Services
 
         public async Task<MainResponse<Email>> getByStatus(
     List<string> allowedUsers,
-    int? status // 👈 optional filter
+    int? status //  optional filter
 )
         {
             MainResponse<Email> response = new MainResponse<Email>();
