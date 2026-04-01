@@ -164,14 +164,24 @@ namespace MyErp.Core.Services
 
                 result.Add(new LeadsStatusbyAssignedUser
                 {
+                    //Name = user,
+                    //Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
+                    //NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
+                    //Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
+                    //NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
+                    //FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
                     Name = user,
                     Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
                     NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
                     Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
+                    responding = userLeads.Count(l => l.Status == LeadStatus.responding),
+                    FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
+                    Duplicated = userLeads.Count(l => l.Status == LeadStatus.Duplicated),
                     NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
                     Responding = userLeads.Count(l => l.Status == LeadStatus.responding),
                     FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
 
+                    NoAction = userLeads.Count(l => l.Status == LeadStatus.NoAction),
                 });
             }
 
@@ -241,8 +251,11 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
+        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated , string createdby)
 
-        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated, string createdby)
+
+
+        public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
         {
             var response = new MainResponse<Lead>();
 
