@@ -336,5 +336,30 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
+        public async Task<MainResponse<Email>> deleteAll()
+        {
+            MainResponse<Email> response = new MainResponse<Email>();
+            try
+            {
+                var deletedLeads = await _unitOfWork.Emails.DeletePhysical(p => true);
+                if (deletedLeads == null || !deletedLeads.Any())
+                {
+                    response.errors?.Add($"No leads found to delete.");
+                    return response;
+                }
+                else
+                {
+                    response.acceptedObjects = deletedLeads.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+        }
+
     }
 }

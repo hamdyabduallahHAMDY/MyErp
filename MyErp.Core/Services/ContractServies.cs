@@ -198,5 +198,28 @@ public class ContractServices
             return response;
         }
     }
+    public async Task<MainResponse<Contract>> deleteAll()
+    {
+        MainResponse<Contract> response = new MainResponse<Contract>();
+        try
+        {
+            var deletedLeads = await _unitOfWork.Contracts.DeletePhysical(p => true);
+            if (deletedLeads == null || !deletedLeads.Any())
+            {
+                response.errors?.Add($"No leads found to delete.");
+                return response;
+            }
+            else
+            {
+                response.acceptedObjects = deletedLeads.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logs.Log(ex.ToString());
+            response.errors?.Add(ex.Message);
+        }
+        return response;
+    }
 
 }

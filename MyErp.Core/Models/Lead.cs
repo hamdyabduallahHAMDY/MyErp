@@ -22,7 +22,17 @@ namespace MyErp.Core.Models
         public string? Website { get; set; }
         public string? Source { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
-        public DateTime? LastEdited { get; set; } 
+        public DateTime? LastEdited { get; set; }
+        public string? Sector { get; set; }
+        public string? PiplineStage { get; set; }
+        public string? Note { get; set; }
+        public string? Probability { get; set; }
+        public string? Channel { get; set; }
+        public string? EstValue { get; set; }
+        public string? Services { get; set; }
+        public string? FounderAcc { get; set; }
+        public string? NextFollowUp { get; set; }
+        public string? Category { get; set; }
 
     }
 }

@@ -39,6 +39,8 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<CalenderTask> CalenderTasks { get; set; }
     public DbSet<Email> Emails { get; set; }    
     public DbSet<Goal> Goals { get; set; }
+    public DbSet<Employee> Employees { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
     //public DbSet<AppUser> applicationUSERs { get; set; }
     #endregion
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

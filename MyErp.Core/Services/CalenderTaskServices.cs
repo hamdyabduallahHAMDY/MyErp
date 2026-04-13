@@ -51,7 +51,7 @@ public class CalendarTaskServices
         return response;
     }
 
-    public async Task<MainResponse<CalenderTask>> addCalendarTask(List<CalenderTaskDTO> tasks)
+    public async Task<MainResponse<CalenderTask>> addCalendarTask(List<CalenderTaskDTO> tasks , string createdby)
     {
         MainResponse<CalenderTask> response = new MainResponse<CalenderTask>();
 
@@ -64,7 +64,13 @@ public class CalendarTaskServices
 
             if (taskList != null && taskList.Count > 0)
             {
+                foreach (var task in taskList)
+                {
+                   // task.CreatedBy = createdby;
+                    task.ReminderTime = task.EndTime.AddMinutes(-task.ReminderMinutesBefore);
+                }
                 await _unitOfWork.CalenderTasks.Add(taskList);
+
                 response.acceptedObjects = taskList;
             }
 
@@ -97,26 +103,26 @@ public class CalendarTaskServices
 
             if (existingTask is null)
             {
-                response.errors.Add($"Cannot find Calendar Task with ID {id}.");
+                response.errors?.Add($"Cannot find Calendar Task with ID {id}.");
 
                 if (validList.errors?.Any() == true)
-                    response.errors.AddRange(validList.errors);
+                    response.errors?.AddRange(validList.errors);
 
                 if (validList.rejectedObjects?.Any() == true)
-                    response.rejectedObjects.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
+                    response.rejectedObjects?.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
 
                 return response;
             }
 
             if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
             {
-                response.errors.Add("No valid payload to update Calendar Task. Fix validation errors and try again.");
+                response.errors?.Add("No valid payload to update Calendar Task. Fix validation errors and try again.");
 
                 if (validList.errors?.Any() == true)
-                    response.errors.AddRange(validList.errors);
+                    response.errors?.AddRange(validList.errors);
 
                 if (validList.rejectedObjects?.Any() == true)
-                    response.rejectedObjects.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
+                    response.rejectedObjects?.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
 
                 return response;
             }
@@ -127,19 +133,19 @@ public class CalendarTaskServices
 
             await _unitOfWork.CalenderTasks.Update(existingTask);
 
-            response.acceptedObjects.Add(existingTask);
+            response.acceptedObjects?.Add(existingTask);
 
             if (validList.rejectedObjects?.Any() == true)
-                response.rejectedObjects.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
+                response.rejectedObjects?.AddRange(_mapper.Map<List<CalenderTask>>(validList.rejectedObjects));
 
             if (validList.errors?.Any() == true)
-                response.errors.AddRange(validList.errors);
+                response.errors?.AddRange(validList.errors);
         }
         catch (Exception ex)
         {
             Logs.Log(ex.ToString());
-            response.errors.Add(ex.Message);
-            if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+            response.errors?.Add(ex.Message);
+            if (ex.InnerException != null) response.errors?.Add(ex.InnerException.Message);
         }
 
         return response;
@@ -160,6 +166,30 @@ public class CalendarTaskServices
 
         response.acceptedObjects = new List<CalenderTask> { task.First() };
 
+        return response;
+    }
+
+    public async Task<MainResponse<CalenderTask>> deleteAll()
+    {
+        MainResponse<CalenderTask> response = new MainResponse<CalenderTask>();
+        try
+        {
+            var deletedLeads = await _unitOfWork.CalenderTasks.DeletePhysical(p => true);
+            if (deletedLeads == null || !deletedLeads.Any())
+            {
+                response.errors?.Add($"No leads found to delete.");
+                return response;
+            }
+            else
+            {
+                response.acceptedObjects = deletedLeads.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logs.Log(ex.ToString());
+            response.errors?.Add(ex.Message);
+        }
         return response;
     }
 }

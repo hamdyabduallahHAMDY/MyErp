@@ -12,8 +12,8 @@ using MyErp.EF.DataAccess;
 namespace MyErp.EF.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260330112505_LastEdited")]
-    partial class LastEdited
+    [Migration("20260407151301_CalnederTaskEdit")]
+    partial class CalnederTaskEdit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -172,6 +172,15 @@ namespace MyErp.EF.Migrations
                     b.Property<DateTime>("EndTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsReminderSent")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ReminderMinutesBefore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReminderTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
@@ -227,14 +236,15 @@ namespace MyErp.EF.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AnyDesk")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -242,16 +252,22 @@ namespace MyErp.EF.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("POC")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TaxRegistrationNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("allowance")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("customerStatus")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -313,6 +329,37 @@ namespace MyErp.EF.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Emails");
+                });
+
+            modelBuilder.Entity("MyErp.Core.Models.Employee", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("MyErp.Core.Models.FAQ", b =>
@@ -409,6 +456,9 @@ namespace MyErp.EF.Migrations
                     b.Property<string>("PhoneNo")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Sector")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Source")
                         .HasColumnType("nvarchar(max)");
 
@@ -423,6 +473,36 @@ namespace MyErp.EF.Migrations
                     b.ToTable("Leads");
                 });
 
+            modelBuilder.Entity("MyErp.Core.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("MyErp.Core.Models.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -432,7 +512,6 @@ namespace MyErp.EF.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Attachment")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedBy")
@@ -477,6 +556,9 @@ namespace MyErp.EF.Migrations
                     b.Property<string>("CreatedBytodo")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomerName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("Daily")
                         .HasColumnType("bit");
 
@@ -486,9 +568,14 @@ namespace MyErp.EF.Migrations
                     b.Property<DateTime?>("LastCheckedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("ProjectType")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Type")
+                        .HasColumnType("int");
 
                     b.Property<int>("ischecked")
                         .HasColumnType("int");
@@ -553,8 +640,14 @@ namespace MyErp.EF.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("allowance")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("registrationTaxid")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("userType")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

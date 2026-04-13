@@ -23,7 +23,14 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             ContractServices = new ContractServices(unitOfWork, _mapper);
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await ContractServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Contract>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetContractList()
         {

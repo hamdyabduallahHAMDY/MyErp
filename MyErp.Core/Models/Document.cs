@@ -11,5 +11,6 @@ namespace MyErp.Core.Models
         public string Name { get; set; }
         public string? subject { get; set; }
         public string? Attachment { get; set; }
+        public string? DocType { get; set; }
     }
 }

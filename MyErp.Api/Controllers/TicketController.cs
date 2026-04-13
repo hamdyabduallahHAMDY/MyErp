@@ -91,6 +91,15 @@ namespace MyErp.Api.Controllers
         }
 
 
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll() { 
+            var result = await UserServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpDelete");
+
+            return resultWithStatusCode;
+        }
+
+
         [HttpGet("download/{fileName}")]
         public IActionResult Download(string fileName)
         {

@@ -13,7 +13,7 @@ namespace MyErp.Core.DTO
         public int TaxRegistrationId { get; set; }
         public string TaxRegistrationName { get; set; }
         public int Status { get; set; }
-        public IFormFile Attachment { get; set; }
+        public IFormFile? Attachment { get; set; }
     }
 
 

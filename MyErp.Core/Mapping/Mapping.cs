@@ -33,6 +33,7 @@ namespace MyErp.Core.Mapping
             //CreateMap<Orderme, OrderCreateDTO>().ReverseMap();
             CreateMap<Lead, LeadDTO>().ReverseMap();
             CreateMap<Email, EmailDTO>().ReverseMap();
+         CreateMap<Employee, EmployeeDTO>().ReverseMap();
             CreateMap<Goal , GoalDTO>().ReverseMap();
         }
     }

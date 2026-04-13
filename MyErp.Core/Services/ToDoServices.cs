@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
@@ -8,6 +9,7 @@ using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using OfficeOpenXml;
+using Type = MyErp.Core.Models.Type;
 
 namespace MyErp.Core.Services
 {
@@ -16,11 +18,16 @@ namespace MyErp.Core.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         Errors<ToDo> Errors = new Errors<ToDo>();
+        private readonly IHubContext<NotificationHub> _hub;
+        private readonly NotificationService _notservices;
 
-        public ToDoServices(IUnitOfWork unitOfWork, IMapper mapper)
+
+        public ToDoServices(IUnitOfWork unitOfWork, IMapper mapper , IHubContext<NotificationHub> hub, NotificationService notificationService)
         {
+            _notservices = notificationService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _hub = hub;
         }
 
 
@@ -52,6 +59,55 @@ namespace MyErp.Core.Services
             worksheet.Cells.AutoFitColumns();
 
             return await package.GetAsByteArrayAsync();
+        }
+
+        //Get All by OdooType
+        public async Task<MainResponse<ToDo>> GetAllByOdooCustomerType(Type odooType , string customername)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            try
+            {
+                if (odooType == Type.Odoo_Development) {
+                    var todos = await _unitOfWork.ToDos.GetAll(a => a.ProjectType == ProjectType.Development_Odoo && a.CustomerName == customername);
+                    if (todos == null || !todos.Any())
+                    {
+                        response.errors?.Add(Errors.ObjectNotFound());
+                        return response;
+                    }
+
+                    response.acceptedObjects = todos.ToList();
+                }
+                if (odooType == Type.Odoo_Implementation)
+                {
+                    var todos = await _unitOfWork.ToDos.GetAll(a => a.ProjectType == ProjectType.Implementation_Odoo && a.CustomerName == customername);
+                    if (todos == null || !todos.Any())
+                    {
+                        response.errors?.Add(Errors.ObjectNotFound());
+                        return response;
+                    }
+
+                    response.acceptedObjects = todos.ToList();
+                }
+                if (odooType == Type.Odoo)
+                {
+                    var todos = await _unitOfWork.ToDos.GetAll(a => a.CustomerName == customername);
+                    if (todos == null || !todos.Any())
+                    {
+                        response.errors?.Add(Errors.ObjectNotFound());
+                        return response;
+                    }
+                    response.acceptedObjects = todos.ToList();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+                if (ex.InnerException != null)
+                    response.errors?.Add(ex.InnerException.Message);
+            }
+            return response;
         }
 
         // GET ALL (with Daily reset)
@@ -95,7 +151,7 @@ namespace MyErp.Core.Services
                     {
                         if ((today - todo.LastCheckedAt.Value).TotalMinutes >= 2)
                         {
-                            todo.ischecked = (IsChecked)0;
+                            todo.ischecked = (Status)0;
 
                             await _unitOfWork.ToDos.Update(todo);
                         }
@@ -115,6 +171,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
         // GET BY ID
         public async Task<MainResponse<ToDo>> getToDo(int id)
         {
@@ -133,9 +190,9 @@ namespace MyErp.Core.Services
                 var today = DateTime.UtcNow.Date;
 
                 if (todo.Daily && todo.LastCheckedAt?.Date != today)
-                    todo.ischecked = (IsChecked)0;
+                    todo.ischecked = (Status)0;
 
-                response.acceptedObjects.Add(todo);
+                response.acceptedObjects?.Add(todo);
             }
             catch (Exception ex)
             {
@@ -186,8 +243,33 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
+        //Get By Type
+        public async Task<MainResponse<ToDo>> getByType(Type type)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            try
+            {
+          
+                var todos = await _unitOfWork.ToDos.GetAll(a => a.Type == type);
+                if (todos == null || !todos.Any())
+                {
+                    response.errors?.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+                
+                response.acceptedObjects = todos.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+        }
+
         // ADD
-        public async Task<MainResponse<ToDo>> addToDo(List<ToDoDTO> todos , string name)
+        public async Task<MainResponse<ToDo>> addToDo(ToDoDTO todos , string name , Type usertype , string AssignedId)
         {
             MainResponse<ToDo> response = new MainResponse<ToDo>();
 
@@ -204,7 +286,25 @@ namespace MyErp.Core.Services
                 }
                 if (todoList != null && todoList.Count > 0)
                 {
+                    foreach (var todo in todoList)
+                    {
+                        todo.CreatedBy = name;
+                        todo.Type = usertype;
+                        var notification = new Notification
+                        {
+                            UserId = AssignedId,
+                            Message = todo.Title,
+                            CreatedAt = DateTime.UtcNow,
+                            IsRead = false,
+                            CreatedBy = name
+                        };
+                        await _unitOfWork.Notifications.Add(notification);
+                        await _hub.Clients.User(AssignedId)
+                   .SendAsync(AssignedId, $"A new ToDo '{todo.Title}' has been assigned to you By {todo.CreatedBy}");
+                        //await _notservices.AddNotificationAsync(AssignedId, $"A new ToDo '{todo.Title}' has been assigned to you.");
+                    }
                     await _unitOfWork.ToDos.Add(todoList);
+                    
                     response.acceptedObjects = todoList;
                 }
 
@@ -217,10 +317,10 @@ namespace MyErp.Core.Services
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
+                response.errors?.Add(ex.Message);
 
                 if (ex.InnerException != null)
-                    response.errors.Add(ex.InnerException.Message);
+                    response.errors?.Add(ex.InnerException.Message);
             }
 
             return response;
@@ -268,7 +368,7 @@ namespace MyErp.Core.Services
                         Title = title,
                         Description = worksheet.Cells[r, 2].Text?.Trim(),
                         AssignedTo = worksheet.Cells[r, 3].Text?.Trim(),
-                        CreatedBy = worksheet.Cells[r, 4].Text?.Trim(),
+                        CustomerName = worksheet.Cells[r, 4].Text?.Trim(),
                         ischecked = int.TryParse(worksheet.Cells[r, 5].Text, out int v) ? v : 0
                     };
 
@@ -298,9 +398,8 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         // UPDATE
-        public async Task<MainResponse<ToDo>> updateToDo(int id, List<ToDoDTO> todoUpdated , string name)
+        public async Task<MainResponse<ToDo>> updateToDo(int id, ToDoDTO todoUpdated , string name)
         {
             var response = new MainResponse<ToDo>();
 
@@ -318,12 +417,12 @@ namespace MyErp.Core.Services
 
                 if (validList.acceptedObjects == null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update.");
+                    response.errors?.Add("No valid payload to update.");
                     return response;
                 }
 
                 var dto = validList.acceptedObjects[0];
-                dto.CreatedBy = name; // Preserve original creator
+                existingTodo.CreatedBy = name; // Preserve original creator
                 _mapper.Map(dto, existingTodo);
 
                 if (dto.ischecked == 1)
@@ -346,7 +445,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         // UPDATE STATUS
         public async Task<MainResponse<ToDo>> UpdateStatus(int id, int status)
         {
@@ -362,7 +460,7 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                todo.ischecked = (IsChecked)status;
+                todo.ischecked = (Status)status;
 
                 if (status == 1 || status == 2 || status == 3)
                     todo.LastCheckedAt = DateTime.UtcNow;
@@ -381,7 +479,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         // DELETE
         public async Task<MainResponse<ToDo>> deleteToDo(int id)
         {
@@ -407,7 +504,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         // DELETE ALL
         public async Task<MainResponse<ToDo>> deleteAll()
         {
@@ -431,7 +527,6 @@ namespace MyErp.Core.Services
             return response;
 
         }
-
         // DELETE GROUP
         public async Task<MainResponse<ToDo>> deleteGroup(List<int> ids)
         {
@@ -460,7 +555,6 @@ namespace MyErp.Core.Services
             }
             return response;
         }
-
         // GET BY ASSIGNED TO
         public async Task<MainResponse<ToDo>> GetByAssignedTo(string assignedTo)
         {
@@ -482,5 +576,51 @@ namespace MyErp.Core.Services
             }
             return response;
         }
+
+        public async Task<MainResponse<ToDo>> getByCustomer(string customer)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            try
+            {
+                var todos = await _unitOfWork.ToDos.GetAll(a => a.CustomerName == customer);
+                if (todos == null || !todos.Any())
+                {
+                    response.errors?.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+                response.acceptedObjects = todos.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+
+        }
+        public async Task<MainResponse<ToDo>> getByCustomerandType(string customer , Type type)
+        {
+            MainResponse<ToDo> response = new MainResponse<ToDo>();
+            try
+            {
+                var todos = await _unitOfWork.ToDos.GetAll(a => a.CustomerName == customer && a.Type  == type);
+                if (todos == null || !todos.Any())
+                {
+                    response.errors?.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+                response.acceptedObjects = todos.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+
+        }
+
+   
+
     }
 }

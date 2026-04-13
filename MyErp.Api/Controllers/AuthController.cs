@@ -1,4 +1,5 @@
-﻿using Logger;
+﻿using License.Core.Helper;
+using Logger;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,7 @@ using OfficeOpenXml;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Type = MyErp.Core.Models.Type;
 
 namespace MyErp.Api.Controllers
 {
@@ -36,6 +38,7 @@ namespace MyErp.Api.Controllers
             worksheet.Cells[1, 3].Value = "Password";
             worksheet.Cells[1, 4].Value = "Rights";
             worksheet.Cells[1, 5].Value = "TaxId";
+            worksheet.Cells[1, 6].Value = "userType";
 
             // ================= DEMO ROW =================
             worksheet.Cells[2, 1].Value = "user1";
@@ -43,6 +46,8 @@ namespace MyErp.Api.Controllers
             worksheet.Cells[2, 3].Value = "P@ssw0rd123";
             worksheet.Cells[2, 4].Value = "{\"allowance\":[\"user2\",\"user3\"]}";
             worksheet.Cells[2, 5].Value = "123456789";
+            worksheet.Cells[2, 6].Value = "1";
+
 
             // ================= STYLING =================
             using (var header = worksheet.Cells[1, 1, 1, 5])
@@ -137,7 +142,7 @@ namespace MyErp.Api.Controllers
                     var password = worksheet.Cells[r, 3].Text?.Trim();
                     var rights = worksheet.Cells[r, 4].Text?.Trim();
                     var taxId = worksheet.Cells[r, 5].Text?.Trim();
-
+                    int userType = Convert.ToInt32(worksheet.Cells[r, 6].Value);
                     if (string.IsNullOrWhiteSpace(username))
                         continue;
 
@@ -154,7 +159,8 @@ namespace MyErp.Api.Controllers
                         UserName = username,
                         Email = email,
                         Rights = rights,
-                        registrationTaxid = taxId
+                        registrationTaxid = taxId,
+                        userType = (Type)userType
                     };
                     
                     var result = await _userManager.CreateAsync(user, password);
@@ -170,7 +176,8 @@ namespace MyErp.Api.Controllers
                         username,
                         email,
                         rights,
-                        taxId
+                        taxId,
+                        userType
                     });
                 }
 
@@ -195,7 +202,8 @@ namespace MyErp.Api.Controllers
                 Email = model.Email,
                 UserName = model.Username,
                 Rights = model.Rights,
-                allowance = model.allowance
+                allowance = model.allowance,
+                userType = (Type)model.userType
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -218,6 +226,7 @@ namespace MyErp.Api.Controllers
             var authClaims = new List<Claim>
             {
                 new Claim("allowance", user.allowance ?? ""),
+                new Claim("userType", user.userType.ToString() ?? "0"),
                 new Claim(ClaimTypes.NameIdentifier ,user.Id),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim("Rights", user.Rights ?? ""),
@@ -231,7 +240,7 @@ namespace MyErp.Api.Controllers
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
-                expires: DateTime.Now.AddHours(3),
+                expires: DateTime.Now.AddDays(3),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );
@@ -253,7 +262,8 @@ namespace MyErp.Api.Controllers
                 u.UserName,
                 u.Email,
                 u.Rights,
-                u.registrationTaxid
+                u.registrationTaxid,
+                u.userType
             }).ToList();
 
             return Ok(users);
@@ -304,6 +314,7 @@ namespace MyErp.Api.Controllers
 
             user.Rights = model.Rights;
             user.allowance = model.allowance;
+            user.userType = (Type)model.userType; 
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
@@ -311,7 +322,7 @@ namespace MyErp.Api.Controllers
 
             return Ok("Rights updated successfully.");
         }
-
+       
         // ================= CHANGE PASSWORD (USER) =================
         //[HttpPut("change-password-by-name")]
         //public async Task<IActionResult> ChangePasswordByName(
@@ -419,10 +430,9 @@ namespace MyErp.Api.Controllers
         }
     // ================= DTOs =================
 
-    public record RegisterModel(string Username, string Email, string Password , string Rights , string allowance);
+    public record RegisterModel(string Username, string Email, string Password , string Rights , string allowance, int userType);
     public record LoginModel(string Username, string Password);
- 
-    public record UpdateRightsModel(string Username, string Rights , string allowance);
+    public record UpdateRightsModel(string Username, string Rights , string allowance, int userType );
     public record UpdateUserByNameModel(string Id, string? Email, string? NewUsername, string? Rights );
     public record ChangePasswordByNameModel(
         string Username,
@@ -438,6 +448,7 @@ namespace MyErp.Api.Controllers
     string? Email,
     string? NewUsername,
     string? Rights,
-    string? NewPassword
+    string? NewPassword,
+    string? userType
 );
 }

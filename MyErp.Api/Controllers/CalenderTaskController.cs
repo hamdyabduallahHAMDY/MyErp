@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
@@ -22,7 +23,14 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             CalendarTasksServices = new CalendarTaskServices(unitOfWork, _mapper);
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await CalendarTasksServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<CalenderTask>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetCalendarTasksList()
         {
@@ -52,11 +60,12 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-
+        [Authorize]
         [HttpPost("add")]
         public async Task<IActionResult> AddCalendarTask([FromBody] List<CalenderTaskDTO> tasks)
         {
-            var result = await CalendarTasksServices.addCalendarTask(tasks);
+            var createdby = User.Identity.Name;
+            var result = await CalendarTasksServices.addCalendarTask(tasks ,createdby);
 
             var resultWithStatusCode = ResponseStatusCode<CalenderTask>.GetApiResponseCode(result, "HttpPost");
 

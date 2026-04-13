@@ -18,6 +18,19 @@ namespace MyErp.Core.Models
             InProgress = 1,
             Closed = 2,
             archived = 3
+        }
+    public enum CustomerStatus
+    {
+        planning = 0 ,
+        todo = 1,
+        InProgress = 2,
+        Done = 3,
+    }
+    public enum ProjectType
+    {
+        NOne = 0,
+        Development_Odoo = 1,
+        Implementation_Odoo = 2,
     }
      public enum IsChecked
      {
@@ -52,5 +65,13 @@ namespace MyErp.Core.Models
         Email = 1
     }
 
-
+    public enum Type
+    {
+        Invoice = 0,
+        Sales = 1,
+        Odoo = 2, 
+        Odoo_Development = 3,
+        Odoo_Implementation = 4,
+        Admin = 5
+    }
 }

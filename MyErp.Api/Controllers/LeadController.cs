@@ -27,11 +27,18 @@ namespace MyErp.Api.Controllers
             LeadServices = new LeadServices(unitOfWork, _mapper);
             _accessService = accessService;
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await LeadServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         [HttpGet("getAll")]
         public async Task<IActionResult> GetLeadList()
         {
-            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
+            var (currentUser, allowedUsers, isAuth , usertype) = _accessService.GetAccessData(User);
 
           
 
@@ -69,7 +76,7 @@ namespace MyErp.Api.Controllers
         [HttpGet("getLeadsStatusbyAssignedUser")]
         public async Task<IActionResult> getLeadsStatusbyAssignedUser()
         {
-            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
+            var (currentUser, allowedUsers, isAuth,s) = _accessService.GetAccessData(User);
 
 
             var result = await LeadServices.GetLeadsStatusByAssignedUser(allowedUsers);
@@ -84,7 +91,7 @@ namespace MyErp.Api.Controllers
         [HttpGet("getById")]
         public async Task<IActionResult> GetLead(int id)
         {
-            var (currentUser, allowedUsers, isAuth) = _accessService.GetAccessData(User);
+            var (currentUser, allowedUsers, isAuth , fd) = _accessService.GetAccessData(User);
 
             var result = await LeadServices.GetLead(id);
 

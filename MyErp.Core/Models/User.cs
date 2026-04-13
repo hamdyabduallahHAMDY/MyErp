@@ -9,6 +9,7 @@ public class User : IdentityUser
     public string? Rights { get; set; }
     public string? allowance { get; set; }
     public string? registrationTaxid { get; set; }
+    public Type userType { get; set; }
     
 }
 

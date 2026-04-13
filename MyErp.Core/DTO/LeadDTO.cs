@@ -9,6 +9,7 @@ namespace MyErp.Core.DTO
 {
     public class LeadDTO
     {
+       
         public string? Name { get; set; }
         public string? PhoneNo { get; set; }
         public string? Email { get; set; }
@@ -21,7 +22,19 @@ namespace MyErp.Core.DTO
         public string? FeedBack { get; set; }
         public string? Website { get; set; }
         public string? Source { get; set; }
-      
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? LastEdited { get; set; }
+        public string? Sector { get; set; }
+        public string? PiplineStage { get; set; }
+        public string? Note { get; set; }
+        public string? Probability { get; set; }
+        public string? Channel { get; set; }
+        public string? EstValue { get; set; }
+        public string? Services { get; set; }
+        public string? FounderAcc { get; set; }
+        public string? NextFollowUp { get; set; }
+        public string? Category { get; set; }
+
     }
     public class LeadStatusCountDTO
     {

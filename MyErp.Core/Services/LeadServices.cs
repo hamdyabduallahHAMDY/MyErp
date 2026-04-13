@@ -38,22 +38,35 @@ namespace MyErp.Core.Services
             {
                 var worksheet = package.Workbook.Worksheets.Add("Leads");
 
-                // 🎯 Headers
+                // Headers
                 var headers = new List<string>
-        {
-            "Name",
-            "Phone",
-            "Email",
-            "Company",
-            "Status",
-            "AssignedTo",
-            "Country",
-            "Notes",
-            "DueDate",
-            "FeedBack",
-            "Website",
-            "Owner"
-        };
+{
+    "CompanyName",
+    "Name",
+    "Category",
+    "PhoneNo",
+    "Email",
+    "AssignedTo",
+    "Status",
+    "Country",
+    "Notes",
+    "DueDate",
+    "FeedBack",
+    "Website",
+    "Source",
+    "CreatedAt",
+    "LastEdited",
+    "Sector",
+    "PiplineStage",
+    "Note",
+    "Probability",
+    "Channel",
+    "EstValue",
+    "Services",
+    "FounderAcc",
+    "NextFollowUp",
+
+};
 
                 // Add headers
                 for (int i = 0; i < headers.Count; i++)
@@ -72,19 +85,32 @@ namespace MyErp.Core.Services
                 // 📏 Auto fit columns
                 worksheet.Cells.AutoFitColumns();
 
-                // 🧠 Optional: Add sample row (VERY useful for users)
+
+                // 🧠 Sample row (VERY IMPORTANT FOR USERS)
                 worksheet.Cells[2, 1].Value = "John Doe";
                 worksheet.Cells[2, 2].Value = "01000000000";
                 worksheet.Cells[2, 3].Value = "john@email.com";
                 worksheet.Cells[2, 4].Value = "ABC Company";
-                worksheet.Cells[2, 5].Value = "follow-up"; // Status
-                worksheet.Cells[2, 6].Value = "71ce24f1-d875-427f-b1df-930f5895735d";
-                worksheet.Cells[2, 7].Value = "EG";
+                worksheet.Cells[2, 5].Value = "71ce24f1-d875-427f-b1df-930f5895735d"; // AssignedTo (UserId)
+                worksheet.Cells[2, 6].Value = "FollowUp"; // Status (must match enum)
+                worksheet.Cells[2, 7].Value = "EG"; // Country (enum)
                 worksheet.Cells[2, 8].Value = "Important client";
                 worksheet.Cells[2, 9].Value = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd");
-                worksheet.Cells[2, 10].Value = "Follow up";
+                worksheet.Cells[2, 10].Value = "Waiting for response";
                 worksheet.Cells[2, 11].Value = "www.abc.com";
-                worksheet.Cells[2, 12].Value = "Saweras";
+                worksheet.Cells[2, 12].Value = "Facebook"; // Source
+                worksheet.Cells[2, 13].Value = DateTime.Now.ToString("yyyy-MM-dd");
+                worksheet.Cells[2, 14].Value = DateTime.Now.ToString("yyyy-MM-dd");
+                worksheet.Cells[2, 15].Value = "Manufacturing";
+                worksheet.Cells[2, 16].Value = "Negotiation";
+                worksheet.Cells[2, 17].Value = "Client is interested";
+                worksheet.Cells[2, 18].Value = "70%";
+                worksheet.Cells[2, 19].Value = "Online";
+                worksheet.Cells[2, 20].Value = "50000";
+                worksheet.Cells[2, 21].Value = "CRM System";
+                worksheet.Cells[2, 22].Value = "Founder1";
+                worksheet.Cells[2, 23].Value = DateTime.Now.AddDays(3).ToString("yyyy-MM-dd");
+                worksheet.Cells[2, 24].Value = "Hot Lead";
 
                 return package.GetAsByteArray();
             }
@@ -100,11 +126,15 @@ namespace MyErp.Core.Services
             foreach (LeadStatus status in /*leads.Select(l => l.Status).Distinct()*/Enum.GetValues(typeof(LeadStatus)))
             {
                 var sts = leads.Where(u => u.Status == status).ToList();
+                if (!sts.Any())
+                {
+                    continue;
+                }
                 var stsPerc = (decimal)((decimal)sts.Count() / (decimal)leads.Count()) * 100;
 
-                leadStatuses.Add(new LeadStatusPercentage { Status =  status, Percentage = Math.Round(stsPerc, 2) });
+                leadStatuses.Add(new LeadStatusPercentage { Status = status, Percentage = Math.Round(stsPerc, 2) });
             }
-
+            
 
             response.acceptedObjects = leadStatuses;
 
@@ -116,9 +146,9 @@ namespace MyErp.Core.Services
             MainResponse<LeadsCountry> response = new MainResponse<LeadsCountry>();
             List<LeadsCountry> LeadsCountry = new List<LeadsCountry>();
 
-            var leads = await _unitOfWork.Leads.GetAll(l=>l.AssignedTo == UserId && l.DueDate >= dateFrom && l.DueDate <= dateTo.Date.AddDays(1));
+            var leads = await _unitOfWork.Leads.GetAll(l => l.AssignedTo == UserId && l.DueDate >= dateFrom && l.DueDate <= dateTo.Date.AddDays(1));
 
-            foreach(EG_KSA country in Enum.GetValues(typeof(EG_KSA)))
+            foreach (EG_KSA country in Enum.GetValues(typeof(EG_KSA)))
             {
                 var cty = leads.Where(u => u.Country == country).ToList();
                 //var ctyPerc = (decimal)((decimal)cty.Count() / (decimal)leads.Count()) * 100;
@@ -248,8 +278,6 @@ namespace MyErp.Core.Services
             response.acceptedObjects = leads.ToList();
             return response;
         }
-
-
 
         public async Task<MainResponse<Lead>> UpdateLead(int id, LeadDTO userUpdated)
         {
@@ -382,7 +410,7 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile , string CreatedBy)
+        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile, string CreatedBy)
         {
             var response = new MainResponse<Lead>();
 
@@ -429,6 +457,7 @@ namespace MyErp.Core.Services
                     var feedback = worksheet.Cells[r, 10].Text?.Trim();
                     var Website = worksheet.Cells[r, 11].Text?.Trim();
                     var AssginedTo = worksheet.Cells[r, 6].Text?.Trim();
+                    var Sector = worksheet.Cells[r, 13].Text?.Trim();
                     Enum.TryParse(statusText, true, out LeadStatus status);
                     Enum.TryParse(countryText, true, out EG_KSA country);
 
@@ -450,7 +479,7 @@ namespace MyErp.Core.Services
                         Website = Website,
                         DueDate = dueDate,
                         FeedBack = feedback,
-                        
+                        Sector = Sector,
                     };
                     var lead = _mapper.Map<Lead>(dto);
                     lead.CreatedBy = CreatedBy;
@@ -509,11 +538,11 @@ namespace MyErp.Core.Services
                 }
                 foreach (var x in allowedUsers)
                 {
-                    var leadss = _unitOfWork.Leads.GetAll(x => x.CreatedBy == x.ToString()); 
+                    var leadss = _unitOfWork.Leads.GetAll(x => x.CreatedBy == x.ToString());
 
 
                 }
-                    var allowed = allowedUsers.ToList();
+                var allowed = allowedUsers.ToList();
 
                 var leads = _unitOfWork.Leads.GetQueryable()
                     .AsEnumerable()
@@ -558,20 +587,20 @@ namespace MyErp.Core.Services
                     .Distinct();
                 var result = new LeadsTodayByUserDTO
                 {
-                        UserName = created,
-                        Responding = leads.Count(l => l.Status == LeadStatus.responding),
+                    UserName = created,
+                    Responding = leads.Count(l => l.Status == LeadStatus.responding),
                     TotalLeadsToday = leads.Count(),
-                        Cancel = leads.Count(l => l.Status == LeadStatus.Cancel),
-                        NotInterested = leads.Count(l => l.Status == LeadStatus.NotInterested),
-                        Interested = leads.Count(l => l.Status == LeadStatus.Interested),
-                        NotResponding = leads.Count(l => l.Status == LeadStatus.NotResponding),
-                        FollowUp = leads.Count(l => l.Status == LeadStatus.FollowUp),
-                        Duplicated = leads.Count(l => l.Status == LeadStatus.Duplicated),
-                        NoAction = leads.Count(l => l.Status == LeadStatus.NoAction)
-                    };
-                
+                    Cancel = leads.Count(l => l.Status == LeadStatus.Cancel),
+                    NotInterested = leads.Count(l => l.Status == LeadStatus.NotInterested),
+                    Interested = leads.Count(l => l.Status == LeadStatus.Interested),
+                    NotResponding = leads.Count(l => l.Status == LeadStatus.NotResponding),
+                    FollowUp = leads.Count(l => l.Status == LeadStatus.FollowUp),
+                    Duplicated = leads.Count(l => l.Status == LeadStatus.Duplicated),
+                    NoAction = leads.Count(l => l.Status == LeadStatus.NoAction)
+                };
 
-                response.acceptedObjects?.Add( result);
+
+                response.acceptedObjects?.Add(result);
             }
             catch (Exception ex)
             {
@@ -621,6 +650,30 @@ namespace MyErp.Core.Services
                     {
                         response.acceptedObjects = deletedTodos.ToList();
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
+            }
+            return response;
+        }
+
+        public async Task<MainResponse<Lead>> deleteAll()
+        {
+            MainResponse<Lead> response = new MainResponse<Lead>();
+            try
+            {
+                var deletedLeads = await _unitOfWork.Leads.DeletePhysical(p => true);
+                if (deletedLeads == null || !deletedLeads.Any())
+                {
+                    response.errors?.Add($"No leads found to delete.");
+                    return response;
+                }
+                else
+                {
+                    response.acceptedObjects = deletedLeads.ToList();
                 }
             }
             catch (Exception ex)

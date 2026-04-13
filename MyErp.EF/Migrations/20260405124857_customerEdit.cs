@@ -1,20 +1,19 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace MyErp.EF.Migrations
 {
     /// <inheritdoc />
-    public partial class CreatedAt : Migration
+    public partial class customerEdit : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedAt",
-                table: "Leads",
-                type: "datetime2",
+            migrationBuilder.AddColumn<string>(
+                name: "allowance",
+                table: "Customers",
+                type: "nvarchar(max)",
                 nullable: true);
         }
 
@@ -22,8 +21,8 @@ namespace MyErp.EF.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                table: "Leads");
+                name: "allowance",
+                table: "Customers");
         }
     }
 }

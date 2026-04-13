@@ -22,7 +22,13 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             GoalServices = new GoalServices(unitOfWork, _mapper);
         }
-
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await GoalServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Goal>.GetApiResponseCode(result, "HttpDelete");
+            return resultWithStatusCode;
+        }
         // ==============================
         // GET ALL GOALS
         // ==============================

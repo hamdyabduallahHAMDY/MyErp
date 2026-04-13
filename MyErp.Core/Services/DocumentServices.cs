@@ -9,6 +9,7 @@ using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using OfficeOpenXml;
 using System.Collections.Generic;
+using Type = MyErp.Core.Models.Type;
 
 
 namespace MyErp.Core.Services
@@ -26,22 +27,31 @@ namespace MyErp.Core.Services
             _mapper = mapper;
         }
 
-        // =========================
         // Get All Documents
-        // =========================
-        public async Task<MainResponse<Document>> getDocumentList()
+        public async Task<MainResponse<Document>> getDocumentList(Type FaqType)
         {
             MainResponse<Document> response = new MainResponse<Document>();
 
             var documents = await _unitOfWork.Documents.GetAll();
+                if (FaqType == Type.Odoo || FaqType == Type.Odoo_Development || FaqType == Type.Odoo_Implementation) 
+                { 
+                  var doc = await _unitOfWork.Documents.GetFirst(d => d.DocType == "Odoo" || d.DocType == "Odoo_Development" || d.DocType == "Odoo_Implementation");
+                }
+            if (FaqType == Type.Invoice) 
+            {
+                var doc = await _unitOfWork.Documents.GetFirst(d => d.DocType == "Invoice");
+            }
+            if (FaqType == Type.Sales) 
+            {
+                var doc = await _unitOfWork.Documents.GetFirst(d => d.DocType == "Sales");
+            }
+
             response.acceptedObjects = documents.ToList();
 
             return response;
         }
 
-        // =========================
         // Get Document By ID
-        // =========================
         public async Task<MainResponse<Document>> getDocument(int id)
         {
             MainResponse<Document> response = new MainResponse<Document>();
@@ -60,7 +70,7 @@ namespace MyErp.Core.Services
         }
 
         // Add Document
-        public async Task<MainResponse<Document>> addDocument(DocumentDTO dto,string apiRootPath)
+        public async Task<MainResponse<Document>> addDocument(DocumentDTO dto,string apiRootPath , Type type , string createdby)
         {
             MainResponse<Document> response = new MainResponse<Document>();
 
@@ -97,8 +107,10 @@ namespace MyErp.Core.Services
                 Document document = new Document
                 {
                     Name = dto.Name,
-                    Attachment = dto.Attachment.FileName,
-                    subject = dto.subject
+                    Attachment = dto?.Attachment.FileName,
+                    subject = dto?.subject,
+                    CreatedBy = createdby,
+                    DocType = type.ToString()
                 };
 
                 await _unitOfWork.Documents.Add(document);
@@ -123,7 +135,6 @@ namespace MyErp.Core.Services
 
 
         //Update
-
         public async Task<MainResponse<Document>> updateTicket(int id, DocumentDTO userUpdated, string apiRootPath)
         {
             var response = new MainResponse<Document>();
@@ -135,7 +146,7 @@ namespace MyErp.Core.Services
                 var existingTicket = await _unitOfWork.Documents.GetFirst(a => a.Id == id);
                 if (existingTicket is null)
                 {
-                    response.errors.Add($"Cannot find Ticket with ID {id}.");
+                    response.errors?.Add($"Cannot find Ticket with ID {id}.");
                     if (validList.rejectedObjects?.Any() == true && validList.errors?.Any() == true)
                         response.errors.AddRange(validList.errors);
 
@@ -147,11 +158,11 @@ namespace MyErp.Core.Services
 
                 if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update Ticket. Fix validation errors and try again.");
+                    response?.errors?.Add("No valid payload to update Ticket. Fix validation errors and try again.");
                     if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
 
                     if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
+                        response?.rejectedObjects?.AddRange(_mapper.Map<List<Document>>(validList.rejectedObjects));
 
                     return response;
                 }
@@ -175,7 +186,7 @@ namespace MyErp.Core.Services
                     }
 
                     existingTicket.Attachment = dto.Attachment.FileName;
-
+                    existingTicket.DocType = existingTicket.DocType;
                 }
 
 
@@ -193,18 +204,12 @@ namespace MyErp.Core.Services
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
-                if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+                response.errors?.Add(ex.Message);
+                if (ex.InnerException != null) response.errors?.Add(ex.InnerException.Message);
             }
 
             return response;
         }
-
-
-
-
-
-
 
         //Add Excel Document
         public async Task<MainResponse<Document>> ImportFromExcel(IFormFile excelFile , string currentuser)
@@ -355,6 +360,31 @@ namespace MyErp.Core.Services
             }
             return response;
         }
+
+        public async Task<MainResponse<Document>> deleteAll()
+        {
+            MainResponse<Document> response = new MainResponse<Document>();
+            try
+            {
+                var deletedLeads = await _unitOfWork.Documents.DeletePhysical(p => true);
+                if (deletedLeads == null || !deletedLeads.Any())
+                {
+                    response.errors?.Add($"No leads found to delete.");
+                    return response;
+                }
+                else
+                {
+                    response.acceptedObjects = deletedLeads.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+        }
+
 
     }
 

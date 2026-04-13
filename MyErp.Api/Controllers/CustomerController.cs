@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using License.Core.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+//using Type = MyErp.Core.Models.Type;
 
 namespace MyErp.Api.Controllers
 {
@@ -17,12 +19,22 @@ namespace MyErp.Api.Controllers
     {
         CustomerServices CustomerServices;
         private readonly IMapper _mapper;
+        private readonly RightsModelServices _accessService;
 
-        public CustomerController(ApplicationDbContext dBContext, IMapper mapper)
+        public CustomerController(ApplicationDbContext dBContext, IMapper mapper, RightsModelServices accessService)
         {
             UnitOfWork unitOfWork = new UnitOfWork(dBContext);
             _mapper = mapper;
             CustomerServices = new CustomerServices(unitOfWork, _mapper);
+            _accessService = accessService;
+        }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await CustomerServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpDelete");
+
+            return resultWithStatusCode;
         }
         [HttpGet("template/customer")]
         public async Task<IActionResult> DownloadCustomerTemplate()
@@ -36,14 +48,41 @@ namespace MyErp.Api.Controllers
                 "Customer_Template.xlsx"
             );
         }
-        [HttpGet("getAll")]
-        public async Task<IActionResult> GetCustomerlist()
+        [HttpGet("getAllowedCustomer")]
+        public async Task<IActionResult> GetAllowedCustomer()
         {
-            var result = await CustomerServices.getCustomersList();
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+            var result = await CustomerServices.getProjectsByAccess(currentUser);
+            var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpGet");
+            return resultWithStatusCode;
+        }
+
+        [HttpGet("GetAllOdoo")]
+        public async Task<IActionResult> GetCustomerlistOdoo()
+        {
+
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+
+            var result = await CustomerServices.getCustomersOdoo(usertype);
 
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpGet");
 
             return resultWithStatusCode;
+
+        }
+        [Authorize]
+        [HttpGet("GetAllByType")]
+        public async Task<IActionResult> GetCustomerlist()
+        {
+
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+
+            var result = await CustomerServices.getCustomersListByType( usertype);
+
+            var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpGet");
+
+            return resultWithStatusCode;
+        
         }
 
         [HttpGet("getById")]
@@ -59,7 +98,9 @@ namespace MyErp.Api.Controllers
         [HttpPut("updateById")]
         public async Task<IActionResult> putCustomer(int id, List<CustomerDTO> customerUpdated)
         {
-            var result = await CustomerServices.updateCustomer(id, customerUpdated);
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+
+            var result = await CustomerServices.updateCustomer(id, customerUpdated , currentUser);
 
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPut");
 
@@ -69,8 +110,9 @@ namespace MyErp.Api.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> putCustomer([FromBody] List<CustomerDTO> customerUpdated)
         {
-            var currentuser = User.Identity.Name;
-            var result = await CustomerServices.addCustomer(customerUpdated);
+            var currentuser = User.Identity?.Name;
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+            var result = await CustomerServices.addCustomer(customerUpdated , usertype, currentUser);
 
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPost");
 
@@ -80,7 +122,7 @@ namespace MyErp.Api.Controllers
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var currentuser = User.Identity.Name;
+            var currentuser = User.Identity?.Name;
 
             var result = await CustomerServices.ImportFromExcel(file , currentuser);
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpPost");

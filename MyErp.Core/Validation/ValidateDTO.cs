@@ -50,7 +50,7 @@ namespace MyErp.Core.Validation
                     response.rejectedObjects.Add(customer);
                     hasError = true;
                     continue;
-                }               
+                }
                 if (hasError)
                 {
                     continue;
@@ -107,58 +107,39 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-        public async static Task<MainResponse<ToDoDTO>> ToDoDTO(List<ToDoDTO> insertDTO, bool isupdate = false)
+        public async static Task<MainResponse<ToDoDTO>> ToDoDTO(ToDoDTO todo, bool isupdate = false)
         {
             MainResponse<ToDoDTO> response = new MainResponse<ToDoDTO>();
             Errors<ToDoDTO> err = new Errors<ToDoDTO>();
             bool hasError = false;
-            foreach (var todo in insertDTO)
-            {
+            
                 if (!(todo.Title.IsStringValidation()))
                 {
                     response.errors?.Add("Tilte must be string only");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
-                    continue;
                 }
                 if (!todo.Description.IsStringValidation())
                 {
                     response.errors.Add("Description must be string only");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
-                    continue;
                 }
-                //var assignedto = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from AspNetUsers where Id = '{todo.AssignedTo}'");
-                //if (!todo.AssignedTo.IsDigitsOrPlusOnly())
-                //{
-                //    response.errors.Add("Error using unexisted user ");
-                //    response.rejectedObjects.Add(todo);
-                //    hasError = true;
-                //    continue;
-                //}
-                //var createdby = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from users where Id = {todo.CreatedBy}");
-                //if (!todo.CreatedBy.IsDigitsOrPlusOnly())
-                //{
-                //    response.errors.Add("Error using unexisted user ");
-                //    response.rejectedObjects.Add(todo);
-                //    hasError = true;
-                //    continue;
-                //}
+               
                 var DBtodo = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from ToDos where Title = '{todo.Title}'");
                 if (DBtodo.Count() > 0 && !isupdate)
                 {
                     response.errors.Add("Tilte is found before in database ");
                     response.rejectedObjects.Add(todo);
                     hasError = true;
-                    continue;
                 }
 
                 if (hasError)
                 {
-                    continue;
+                return response;
                 }
                 response.acceptedObjects.Add(todo);
-            }
+            
             return response;
         }
         public async static Task<MainResponse<FAQDTO>> FAQDTO(FAQDTO faq, bool isupdate = false)
@@ -166,32 +147,32 @@ namespace MyErp.Core.Validation
             MainResponse<FAQDTO> response = new MainResponse<FAQDTO>();
             Errors<FAQDTO> err = new Errors<FAQDTO>();
             bool hasError = false;
-           
-                var DBfaq = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{faq.Error}'");
-                if (DBfaq.Count() > 0 && !isupdate)
-                {
-                    response.errors.Add("this FAQ name is found before ");
-                    response.rejectedObjects.Add(faq);
-                    hasError = true;
-                }
-                if (!faq.Error.IsStringValidation())
-                {
-                    response.errors.Add("Error must be string only ");
-                    response.rejectedObjects.Add(faq);
-                    hasError = true;
-                }
-                if (!faq.Details.IsStringValidation())
-                {
-                    response.errors.Add("Details must be string only");
-                    response.rejectedObjects.Add(faq);
-                    hasError = true;
-                }
-                if (hasError)
-                {
+
+            var DBfaq = await ADO.GetExecuteQueryMySql<Models.FAQ>($"select * from Customers where Name = '{faq.Error}'");
+            if (DBfaq.Count() > 0 && !isupdate)
+            {
+                response.errors.Add("this FAQ name is found before ");
+                response.rejectedObjects.Add(faq);
+                hasError = true;
+            }
+            if (!faq.Error.IsStringValidation())
+            {
+                response.errors.Add("Error must be string only ");
+                response.rejectedObjects.Add(faq);
+                hasError = true;
+            }
+            if (!faq.Details.IsStringValidation())
+            {
+                response.errors.Add("Details must be string only");
+                response.rejectedObjects.Add(faq);
+                hasError = true;
+            }
+            if (hasError)
+            {
                 return response;
             }
-                response.acceptedObjects.Add(faq);
-            
+            response.acceptedObjects.Add(faq);
+
             return response;
         }
         public async static Task<MainResponse<DocumentDTO>> DocumentDTO(DocumentDTO doc, bool isupdate = false)
@@ -463,5 +444,42 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
+        public async static Task<MainResponse<EmployeeDTO>> EmployeeDTO(EmployeeDTO employee, bool isupdate = false)
+        {
+            MainResponse<EmployeeDTO> response = new MainResponse<EmployeeDTO>();
+            Errors<EmployeeDTO> err = new Errors<EmployeeDTO>();
+            bool hasError = false;
+            {
+                var DBemployee = await ADO.GetExecuteQueryMySql<Models.Employee>($"select * from Employees where Name = '{employee.Name}'");
+                if (DBemployee.Count() > 0 && !isupdate)
+                {
+                    response.errors.Add("This Employee with this name is found before in database ");
+                    response.rejectedObjects.Add(employee);
+                    hasError = true;
+                    return response;
+                }
+                if (!employee.Name.IsStringValidation())
+                {
+                    response.errors.Add("Employee name must be string only ");
+                    response.rejectedObjects.Add(employee);
+                    hasError = true;
+                    return response;
+                }
+                if (!employee.PhoneNo.IsDigitsOrPlusOnly())
+                {
+                    response.errors.Add("Employee Phone No must be digits only");
+                    response.rejectedObjects.Add(employee);
+                    hasError = true;
+                    return response;
+                }
+                if (hasError)
+                {
+                    return response;
+                }
+                response.acceptedObjects.Add(employee);
+            }
+            return response;
+        }
+      
     }
 }

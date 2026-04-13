@@ -26,7 +26,14 @@ namespace MyErp.Api.Controllers
 
             EmailServices = new EmailServices(unitOfWork, _mapper);
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await EmailServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         // GET ALL EMAILS
         [HttpGet("getAll")]
         public async Task<IActionResult> GetEmailList()

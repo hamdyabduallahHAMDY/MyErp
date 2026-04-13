@@ -151,7 +151,7 @@ namespace MyErp.EF.Repositories
         {
             try
             {
-               // entity.RowStatus = RowStatus.Delete;
+                // entity.RowStatus = RowStatus.Delete;
                 _context.Set<T>().Update(entity);
                 await _context.SaveChangesAsync();
                 return entity;
@@ -170,7 +170,7 @@ namespace MyErp.EF.Repositories
                 foreach (var item in entity)
                 {
 
-                 //   item.RowStatus = RowStatus.Delete;
+                    //   item.RowStatus = RowStatus.Delete;
 
                 }
                 return await Update(entity);

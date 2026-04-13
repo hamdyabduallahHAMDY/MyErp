@@ -12,8 +12,11 @@ using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Type = MyErp.Core.Models.Type;
 
 namespace MyErp.Core.Services
 {
@@ -61,12 +64,76 @@ namespace MyErp.Core.Services
             return await package.GetAsByteArrayAsync();
         }
 
-        public async Task<MainResponse<Customer>> getCustomersList()
+        public async Task<MainResponse<Customer>> getProjectsByAccess(string currentUser)
+        {
+            var response = new MainResponse<Customer>();
+
+           // var currentUser = user.Identity?.Name;
+
+            if (string.IsNullOrEmpty(currentUser))
+            {
+                response.errors = new List<string> { "User is not authenticated" };
+                return response;
+            }
+
+            try
+            {
+                var projects = await _unitOfWork.Customers.GetAll();
+
+               
+                var filtered = projects
+                    .AsEnumerable()
+                    .Where(p =>
+                        p.CreatedBy == currentUser ||
+                        (
+                            !string.IsNullOrEmpty(p.allowance) &&
+                            JsonSerializer.Deserialize<List<string>>(p.allowance)
+                                ?.Contains(currentUser) == true
+                        )
+                    )
+                    .ToList();
+                foreach (var project in projects)
+                {
+                    if (!(project.allowance == null))
+                    {
+                        var countUsers = JsonSerializer.Deserialize<List<string>>(project.allowance).Count();
+                        project.allowance = countUsers.ToString();
+                    }
+                }
+                response.acceptedObjects = filtered;
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors = new List<string> { ex.Message };
+            }
+
+            return response;
+        }
+
+        public async Task<MainResponse<Customer>> getCustomersListByType(Type type)
         {
             MainResponse<Customer> response = new MainResponse<Customer>();
-            var customers = await _unitOfWork.Customers.GetAll();
+
+            var customers = await _unitOfWork.Customers
+                .GetAll(x => x.Type == type);
+
             response.acceptedObjects = customers.ToList();
+
             return response;
+        }
+
+        public async Task<MainResponse<Customer>> getCustomersOdoo(Type type)
+        {
+            MainResponse<Customer> response = new MainResponse<Customer>();
+
+            var customers = await _unitOfWork.Customers
+                .GetAll(x => x.Type == Type.Odoo);
+
+            response.acceptedObjects = customers.ToList();
+
+            return response;
+        
         }
 
         public async Task<MainResponse<Customer>> getCustomer(int id)
@@ -83,7 +150,7 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Customer>> updateCustomer(int id, List<CustomerDTO> customerUpdated)
+        public async Task<MainResponse<Customer>> updateCustomer(int id, List<CustomerDTO> customerUpdated , string cretaedby)
         {
             var response = new MainResponse<Customer>();
 
@@ -95,30 +162,33 @@ namespace MyErp.Core.Services
 
                 if (existingCustomer is null)
                 {
-                    response.errors.Add($"Cannot find Customer with Id {id}.");
+                    response.errors?.Add($"Cannot find Customer with Id {id}.");
 
                     if (validList.rejectedObjects?.Any() == true)
-                        if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
-                    response.rejectedObjects.AddRange(_mapper.Map<List<Customer>>(validList.rejectedObjects));
+                        if (validList.errors?.Any() == true) response.errors?.AddRange(validList.errors);
+                    response.rejectedObjects?.AddRange(_mapper.Map<List<Customer>>(validList.rejectedObjects));
                     return response;
                 }
 
                 if (validList.acceptedObjects is null || validList.acceptedObjects.Count == 0)
                 {
-                    response.errors.Add("No valid payload to update Customer. Fix validation errors and try again.");
-                    if (validList.errors?.Any() == true) response.errors.AddRange(validList.errors);
+                    response.errors?.Add("No valid payload to update Customer. Fix validation errors and try again.");
+                    if (validList.errors?.Any() == true) response.errors?.AddRange(validList.errors);
                     if (validList.rejectedObjects?.Any() == true)
-                        response.rejectedObjects.AddRange(_mapper.Map<List<Customer>>(validList.rejectedObjects));
+                        response.rejectedObjects?.AddRange(_mapper.Map<List<Customer>>(validList.rejectedObjects));
                     return response;
                 }
 
                 var dto = validList.acceptedObjects[0];
-
+                
                 _mapper.Map(dto, existingCustomer);
 
+                //aaaaaaaaaaaaaaaaaaaaaaahhhhhh 
+                existingCustomer.Type = dto.Type;
+                existingCustomer.CreatedBy = cretaedby;
                 await _unitOfWork.Customers.Update(existingCustomer);
 
-                response.acceptedObjects.Add(existingCustomer);
+                response.acceptedObjects?.Add(existingCustomer);
 
                 if (validList.rejectedObjects?.Any() == true)
                     response.rejectedObjects.AddRange(_mapper.Map<List<Customer>>(validList.rejectedObjects));
@@ -220,7 +290,7 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Customer>> addCustomer(List<CustomerDTO> customer)
+        public async Task<MainResponse<Customer>> addCustomer(List<CustomerDTO> customer , Type type , string createdby)
         {
             MainResponse<Customer> response = new MainResponse<Customer>();
             try
@@ -229,8 +299,16 @@ namespace MyErp.Core.Services
 
                 List<Customer> Customerlist = _mapper.Map<List<Customer>>(validList.acceptedObjects);
                 List<Customer> rejectedCustomer = _mapper.Map<List<Customer>>(validList.rejectedObjects);
-                if (Customerlist != null && Customerlist.Count() > 0)
+                foreach ( var cast in customer) 
                 {
+                    cast.Type = type;                    
+                }
+                foreach ( var cast in Customerlist) 
+                {
+                    cast.CreatedBy = createdby;                    
+                }
+                if (Customerlist != null && Customerlist.Count() > 0)
+                { 
                     var customerlists = await _unitOfWork.Customers.Add(Customerlist);
                     response.acceptedObjects = Customerlist;
                 }
@@ -292,5 +370,30 @@ namespace MyErp.Core.Services
             }
             return response;
         }
+
+        public async Task<MainResponse<Customer>> deleteAll()
+        {
+            MainResponse<Customer> response = new MainResponse<Customer>();
+            try
+            {
+                var deletedLeads = await _unitOfWork.Customers.DeletePhysical(p => true);
+                if (deletedLeads == null || !deletedLeads.Any())
+                {
+                    response.errors?.Add($"No leads found to delete.");
+                    return response;
+                }
+                else
+                {
+                    response.acceptedObjects = deletedLeads.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+        }
+
     }
 }

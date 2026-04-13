@@ -13,5 +13,8 @@ namespace MyErp.Core.DTO
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string allday { get; set; }
+        public DateTime ReminderTime { get; set; }
+        public string CreatedBy { get; set; }
+
     }
 }

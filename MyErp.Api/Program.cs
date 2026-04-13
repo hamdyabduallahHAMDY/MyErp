@@ -4,70 +4,28 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyErp.Api;
+using MyErp.Core.Interfaces;
 using MyErp.Core.Mapping;
 using MyErp.Core.Models;
+using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
+using MyErp.EF.Repositories;
 using OfficeOpenXml;
-using System;
 using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ===================== SERVICES =====================
 
+// Controllers
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
-
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddAutoMapper(typeof(Mapping));
-var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
-
-builder.Services.AddScoped<RightsModelServices>();
-// 2. Identity Service
-builder.Services.AddIdentity<User, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
-// 3. JWT Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-});
-
-//builder.Services.AddControllers().AddNewtonsoftJson();
-//builder.Services.AddEndpointsApiExplorer();
-
-// 4. Swagger Configuration with Authorize Button
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Test Auth API", Version = "v1" });
 
-    // ÊÚÑíÝ ÇáÜ Bearer Auth Ýí Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -94,39 +52,118 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // 🔥 allow any origin (for testing)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+// SignalR
+builder.Services.AddSignalR();
+
+// DB
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+var conStr = builder.Configuration.GetConnectionString("DefaultConnection");
 MyErp.Core.Global.CustomerConfiguration.ConnectionString = conStr;
 
-//builder.WebHost.UseKestrel(options =>
-//{
-//    options.Listen(System.Net.IPAddress.Parse("192.168.1.20"), 1234);
-//});
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(Mapping));
 
+// Services
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<RightsModelServices>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<GetUSerId>();
+builder.Services.AddHostedService<ReminderWorker>();
+// Identity
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+// ===================== JWT =====================
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+
+    // 🔥 IMPORTANT: SignalR needs this
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.StartsWithSegments("/notificationHub"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
 
 // EPPlus License
 ExcelPackage.License.SetNonCommercialPersonal("MyErp Development");
+
+// ===================== BUILD =====================
 var app = builder.Build();
-app.UseCors();
+
+// ===================== MIDDLEWARE =====================
+
+// ✅ CORS FIRST
+app.UseCors("CorsPolicy");
+
+// Static files (if needed)
 app.UseStaticFiles();
 
+// Swagger
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// HTTPS
+app.UseHttpsRedirection();
+
+// Auth
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Controllers
+app.MapControllers();
+
+// SignalR Hub
+app.MapHub<NotificationHub>("/notificationHub");
+
+// DB Migration
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
 
-//// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-    app.UseSwagger();
-
-    app.UseSwaggerUI();
-//}
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
+// ===================== RUN =====================
 app.Run();

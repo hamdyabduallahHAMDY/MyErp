@@ -26,6 +26,8 @@ namespace MyErp.Core.Interfaces
         ICmd<Lead> Leads { get; }
         ICmd<Email> Emails { get; }
         ICmd<Goal> Goals { get; }
+        ICmd<Employee> Employees { get; }
+        ICmd<Notification> Notifications { get; }
         //ICmd<applicationUSER> applicationUSERs { get; }
         Task<int> Complete();
 

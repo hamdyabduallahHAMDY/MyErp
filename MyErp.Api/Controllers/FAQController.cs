@@ -24,7 +24,14 @@ namespace MyErp.Api.Controllers
             _mapper = mapper;
             FAQServices = new FAQServices(unitOfWork, _mapper);
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await FAQServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<FAQ>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         // ==============================
         // GET ALL FAQs
         // ==============================

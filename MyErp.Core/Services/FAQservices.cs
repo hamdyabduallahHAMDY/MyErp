@@ -368,5 +368,29 @@ namespace MyErp.Core.Services
             }
             return response;
         }
+        public async Task<MainResponse<FAQ>> deleteAll()
+        {
+            MainResponse<FAQ> response = new MainResponse<FAQ>();
+            try
+            {
+                var deletedLeads = await _unitOfWork.FAQs.DeletePhysical(p => true);
+                if (deletedLeads == null || !deletedLeads.Any())
+                {
+                    response.errors?.Add($"No leads found to delete.");
+                    return response;
+                }
+                else
+                {
+                    response.acceptedObjects = deletedLeads.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Log(ex.ToString());
+                response.errors?.Add(ex.Message);
+            }
+            return response;
+        }
+
     }
 }

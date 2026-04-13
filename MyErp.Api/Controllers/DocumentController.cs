@@ -21,25 +21,36 @@ namespace MyErp.Api.Controllers
     {
         DocumentServices DocumentServices;
         private readonly IMapper _mapper;
+        private readonly RightsModelServices _accessService;
 
-        public DocumentController(ApplicationDbContext dBContext, IMapper mapper)
+        public DocumentController(ApplicationDbContext dBContext, IMapper mapper , RightsModelServices accessService)
         {
             UnitOfWork unitOfWork = new UnitOfWork(dBContext);
             _mapper = mapper;
             DocumentServices = new DocumentServices(unitOfWork, _mapper);
+            _accessService = accessService;
         }
 
         // GET ALL
+        [Authorize]
         [HttpGet("getAll")]
         public async Task<IActionResult> GetDocumentList()
         {
-            var result = await DocumentServices.getDocumentList();
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+            var result = await DocumentServices.getDocumentList(usertype);
             var resultWithStatusCode =
                 ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpGet");
 
             return resultWithStatusCode;
         }
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var result = await DocumentServices.deleteAll();
+            var resultWithStatusCode = ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpDelete");
 
+            return resultWithStatusCode;
+        }
         // GET BY ID
         [HttpGet("getById")]
         public async Task<IActionResult> GetDocument(int id)
@@ -68,13 +79,16 @@ namespace MyErp.Api.Controllers
         }
 
         // ADD
+        [Authorize]
         [HttpPost("add")]
         public async Task<IActionResult> AddDocument([FromForm] DocumentDTO documents)
         {
             // Get API root directory
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+
             var apiRootPath = Directory.GetCurrentDirectory();
 
-            var result = await DocumentServices.addDocument(documents, apiRootPath);
+            var result = await DocumentServices.addDocument(documents, apiRootPath,usertype , currentUser);
 
             var resultWithStatusCode =
                 ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpPost");
