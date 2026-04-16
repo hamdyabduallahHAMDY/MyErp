@@ -37,15 +37,15 @@ namespace MyErp.Core.Services
                 {
                     UserId = receiverId,
                     Message = message,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     IsRead = false
                 };
 
                 await _unitOfWork.Notifications.Add(notification);
 
-                response.acceptedObjects.Add(notification);
+                response.acceptedObjects?.Add(notification);
 
-                // 🔥 Send Real-Time Notification
+                // Send Real-Time Notification  
                 await _hub.Clients.User(receiverId)
                     .SendAsync("ReceiveNotification", message);
 
@@ -77,9 +77,6 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-
-                
-
                 if (notifications == null || !notifications.Any())
                 {
                     response.errors?.Add("No notifications found.");
@@ -92,7 +89,7 @@ namespace MyErp.Core.Services
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
+                response?.errors?.Add(ex.Message);
 
                 if (ex.InnerException != null)
                     response.errors.Add(ex.InnerException.Message);

@@ -59,52 +59,48 @@ namespace MyErp.Core.Validation
             }
             return response;
         }
-        public async static Task<MainResponse<CalenderTaskDTO>> CalenderTaskDTO(List<CalenderTaskDTO> insertDTO, bool isupdate = false)
+        public async static Task<MainResponse<CalenderTaskDTO>> CalenderTaskDTO(CalenderTaskDTO insertDTO, bool isupdate = false)
         {
             MainResponse<CalenderTaskDTO> response = new MainResponse<CalenderTaskDTO>();
             Errors<CalenderTaskDTO> err = new Errors<CalenderTaskDTO>();
             bool hasError = false;
-            foreach (var calen in insertDTO)
-            {
-                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{calen.Title}'");
+                 
+                var DBcustomer = await ADO.GetExecuteQueryMySql<Models.CalenderTask>($"select * from CalenderTasks where Title = '{insertDTO.Title}'");
                 if (DBcustomer.Count() > 0 && !isupdate)
                 {
                     response.errors?.Add("This Title is found before");
-                    response.rejectedObjects?.Add(calen);
+                    response.rejectedObjects?.Add(insertDTO);
                     hasError = true;
-                    continue;
                 }
                 var now = DateTime.Now;
 
-                if (calen.EndTime <= now)
+                if (insertDTO.EndTime <= now)
                 {
                     response.errors?.Add("EndTime can't be before the current time.");
-                    response.rejectedObjects?.Add(calen);
+                    response.rejectedObjects?.Add(insertDTO);
                     hasError = true;
-                    continue;
                 }
 
-                if (calen.StartTime >= calen.EndTime)
+                if (insertDTO.StartTime >= insertDTO.EndTime)
                 {
                     response.errors?.Add("StartTime can't be after or equal to EndTime.");
-                    response.rejectedObjects?.Add(calen);
+                    response.rejectedObjects?.Add(insertDTO);
                     hasError = true;
-                    continue;
                 }
-                if (!(calen.allday == "false" || calen.allday == "true"))
+                if (!(insertDTO.allday == "false" || insertDTO.allday == "true"))
                 {
                     response.errors?.Add("Invalid allday status.");
-                    response.rejectedObjects?.Add(calen);
+                    response.rejectedObjects?.Add(insertDTO);
                     hasError = true;
                     return response;
 
                 }
                 if (hasError)
                 {
-                    continue;
-                }
-                response.acceptedObjects?.Add(calen);
+                    return response;
             }
+                response.acceptedObjects?.Add(insertDTO);
+            
             return response;
         }
         public async static Task<MainResponse<ToDoDTO>> ToDoDTO(ToDoDTO todo, bool isupdate = false)
@@ -113,18 +109,18 @@ namespace MyErp.Core.Validation
             Errors<ToDoDTO> err = new Errors<ToDoDTO>();
             bool hasError = false;
             
-                if (!(todo.Title.IsStringValidation()))
-                {
-                    response.errors?.Add("Tilte must be string only");
-                    response.rejectedObjects.Add(todo);
-                    hasError = true;
-                }
-                if (!todo.Description.IsStringValidation())
-                {
-                    response.errors.Add("Description must be string only");
-                    response.rejectedObjects.Add(todo);
-                    hasError = true;
-                }
+                //if (!(todo.Title.IsStringValidation()))
+                //{
+                //    response.errors?.Add("Tilte must be string only");
+                //    response.rejectedObjects.Add(todo);
+                //    hasError = true;
+                //}
+                //if (!todo.Description.IsStringValidation())
+                //{
+                //    response.errors.Add("Description must be string only");
+                //    response.rejectedObjects.Add(todo);
+                //    hasError = true;
+                //}
                
                 var DBtodo = await ADO.GetExecuteQueryMySql<Models.ToDo>($"select * from ToDos where Title = '{todo.Title}'");
                 if (DBtodo.Count() > 0 && !isupdate)

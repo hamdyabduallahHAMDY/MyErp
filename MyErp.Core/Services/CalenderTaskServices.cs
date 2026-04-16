@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using Logger;
+using Microsoft.AspNetCore.SignalR;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
+using System.Text.Json;
 
 namespace MyErp.Core.Services;
 
@@ -13,13 +15,16 @@ public class CalendarTaskServices
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-
+    private readonly IHubContext<NotificationHub> _hub;
+    private readonly NotificationService _notificationService;
     Errors<CalenderTask> Errors = new Errors<CalenderTask>();
 
-    public CalendarTaskServices(IUnitOfWork unitOfWork, IMapper mapper)
+    public CalendarTaskServices(IUnitOfWork unitOfWork, IMapper mapper, IHubContext<NotificationHub> hub, NotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _hub = hub;
+        _notificationService = notificationService;
     }
 
     public async Task<MainResponse<CalenderTask>> getCalendarTasksList()
@@ -51,7 +56,11 @@ public class CalendarTaskServices
         return response;
     }
 
-    public async Task<MainResponse<CalenderTask>> addCalendarTask(List<CalenderTaskDTO> tasks , string createdby)
+
+    public async Task<MainResponse<CalenderTask>> addCalendarTask(
+        CalenderTaskDTO tasks,
+        string createdby,
+        List<string> assignedto)
     {
         MainResponse<CalenderTask> response = new MainResponse<CalenderTask>();
 
@@ -62,13 +71,47 @@ public class CalendarTaskServices
             List<CalenderTask> taskList = _mapper.Map<List<CalenderTask>>(validList.acceptedObjects);
             List<CalenderTask> rejectedTasks = _mapper.Map<List<CalenderTask>>(validList.rejectedObjects);
 
+            // ✅ Ensure list is safe
+            var assignedUsers = assignedto ?? new List<string>();
+
             if (taskList != null && taskList.Count > 0)
             {
                 foreach (var task in taskList)
                 {
-                   // task.CreatedBy = createdby;
-                    task.ReminderTime = task.EndTime.AddMinutes(-task.ReminderMinutesBefore);
+                    task.CreatedBy = createdby;
+
+                    // (Optional but recommended) keep consistency
+                    task.AssignedTo = string.Join(",", assignedUsers);
+
+                    // 🔥 Create DB notification per user
+                    foreach (var user in assignedUsers)
+                    {
+                        var notification = new Notification
+                        {
+                            title = "New Calendar Task Assigned",
+                            UserId = user,
+                            Message = task.Title,
+                            CreatedAt = DateTime.Now,
+                            IsRead = false,
+                            CreatedBy = createdby
+                        };
+
+                        await _unitOfWork.Notifications.Add(notification);
+
+                        // 🔥 SignalR push
+                        await _hub.Clients.User(user)
+                            .SendAsync("ReceiveNotification", new
+                            {
+                                title = "New Calendar Task Assigned",
+                                taskTitle = task.Title,
+                                assignedBy = createdby,
+                                message = $"\"{task.Title}\" has been assigned to you",
+                                type = "CalendarsTaskAssigned",
+                                createdAt = DateTime.UtcNow
+                            });
+                    }
                 }
+
                 await _unitOfWork.CalenderTasks.Add(taskList);
 
                 response.acceptedObjects = taskList;
@@ -86,12 +129,14 @@ public class CalendarTaskServices
         {
             Logs.Log(ex.ToString());
             response.errors.Add(ex.Message);
-            if (ex.InnerException != null) response.errors.Add(ex.InnerException.Message);
+
+            if (ex.InnerException != null)
+                response.errors.Add(ex.InnerException.Message);
+
             return response;
         }
     }
-
-    public async Task<MainResponse<CalenderTask>> updateCalendarTask(int id, List<CalenderTaskDTO> taskUpdated)
+    public async Task<MainResponse<CalenderTask>> updateCalendarTask(int id, CalenderTaskDTO taskUpdated)
     {
         var response = new MainResponse<CalenderTask>();
 

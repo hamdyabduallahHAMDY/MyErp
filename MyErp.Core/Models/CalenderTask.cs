@@ -18,6 +18,10 @@ namespace MyErp.Core.Models
         public DateTime ReminderTime { get; set; }
 
         public bool IsReminderSent { get; set; } = false;
+        public string AssignedTo { get; set; }
+        public string? MettingLink { get; set; }
+        public string? Description { get; set; }
+    
 
 
 

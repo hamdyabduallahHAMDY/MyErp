@@ -240,7 +240,7 @@ namespace MyErp.Api.Controllers
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
-                expires: DateTime.Now.AddDays(3),
+                expires: DateTime.Now.AddDays(300),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );

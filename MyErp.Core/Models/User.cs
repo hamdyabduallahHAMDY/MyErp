@@ -10,6 +10,7 @@ public class User : IdentityUser
     public string? allowance { get; set; }
     public string? registrationTaxid { get; set; }
     public Type userType { get; set; }
-    
+
+ 
 }
 

@@ -9,10 +9,10 @@ namespace MyErp.Core.Models
 {
     public class Notification : Common
     {
-        
+        public string title { get; set; }
         public string UserId { get; set; }
         public string Message { get; set; }
         public bool IsRead { get; set; } = false;
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } 
     }
 }

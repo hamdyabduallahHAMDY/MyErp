@@ -1,12 +1,14 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
 using MyErp.Core.Models;
 using MyErp.Core.Services;
 using MyErp.EF.DataAccess;
 using MyErp.EF.Repositories;
+using System.Text.Json;
 
 namespace MyErp.Api.Controllers
 {
@@ -16,12 +18,16 @@ namespace MyErp.Api.Controllers
     {
         CalendarTaskServices CalendarTasksServices;
         private readonly IMapper _mapper;
-
-        public CalenderTaskController(ApplicationDbContext dBContext, IMapper mapper)
+        private readonly GetUSerId _getUSerId;
+        private readonly IHubContext<NotificationHub> _hub;
+        private readonly NotificationService _notificationService;
+        public CalenderTaskController(ApplicationDbContext dBContext, IMapper mapper, GetUSerId getUSerId, IHubContext<NotificationHub> hub, NotificationService notificationService)
         {
             UnitOfWork unitOfWork = new UnitOfWork(dBContext);
             _mapper = mapper;
-            CalendarTasksServices = new CalendarTaskServices(unitOfWork, _mapper);
+            CalendarTasksServices = new CalendarTaskServices(unitOfWork, _mapper, hub, notificationService);
+            _getUSerId = getUSerId;
+
         }
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
@@ -52,7 +58,7 @@ namespace MyErp.Api.Controllers
         }
 
         [HttpPut("updateById")]
-        public async Task<IActionResult> PutCalendarTask(int id, List<CalenderTaskDTO> taskUpdated)
+        public async Task<IActionResult> PutCalendarTask(int id, CalenderTaskDTO taskUpdated)
         {
             var result = await CalendarTasksServices.updateCalendarTask(id, taskUpdated);
 
@@ -62,12 +68,27 @@ namespace MyErp.Api.Controllers
         }
         [Authorize]
         [HttpPost("add")]
-        public async Task<IActionResult> AddCalendarTask([FromBody] List<CalenderTaskDTO> tasks)
+        public async Task<IActionResult> AddCalendarTask([FromBody] CalenderTaskDTO task)
         {
             var createdby = User.Identity.Name;
-            var result = await CalendarTasksServices.addCalendarTask(tasks ,createdby);
 
-            var resultWithStatusCode = ResponseStatusCode<CalenderTask>.GetApiResponseCode(result, "HttpPost");
+            // 🔥 Deserialize usernames
+            var assignedUsernames = JsonSerializer.Deserialize<List<string>>(task.AssignedTo);
+
+            // 🔥 Convert usernames → userIds
+            var assignedIds = new List<string>();
+
+            foreach (var username in assignedUsernames)
+            {
+                var userId = await _getUSerId.GetUserIdByUsernameAsync(username);
+                if (!string.IsNullOrEmpty(userId))
+                    assignedIds.Add(userId);
+            }
+
+            var result = await CalendarTasksServices.addCalendarTask(task, createdby, assignedIds);
+
+            var resultWithStatusCode =
+                ResponseStatusCode<CalenderTask>.GetApiResponseCode(result, "HttpPost");
 
             return resultWithStatusCode;
         }

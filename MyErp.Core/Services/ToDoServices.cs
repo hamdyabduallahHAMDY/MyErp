@@ -142,7 +142,7 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                var today = DateTime.UtcNow;
+                var today = DateTime.Now;
 
                 //  Daily reset logic
                 foreach (var todo in todos)
@@ -187,7 +187,7 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                var today = DateTime.UtcNow.Date;
+                var today = DateTime.Now.Date;
 
                 if (todo.Daily && todo.LastCheckedAt?.Date != today)
                     todo.ischecked = (Status)0;
@@ -281,7 +281,7 @@ namespace MyErp.Core.Services
                 var rejectedList = _mapper.Map<List<ToDo>>(validList.rejectedObjects);
                 foreach (var todo in todoList)
                 {
-                    todo.LastCheckedAt = DateTime.UtcNow;
+                    todo.LastCheckedAt = DateTime.Now;
                     todo.CreatedBy = name;
                 }
                 if (todoList != null && todoList.Count > 0)
@@ -292,16 +292,25 @@ namespace MyErp.Core.Services
                         todo.Type = usertype;
                         var notification = new Notification
                         {
+                            title = "You received a new ToDo Task!",
                             UserId = AssignedId,
                             Message = todo.Title,
-                            CreatedAt = DateTime.UtcNow,
+                            CreatedAt = DateTime.Now,
                             IsRead = false,
                             CreatedBy = name
                         };
                         await _unitOfWork.Notifications.Add(notification);
                         await _hub.Clients.User(AssignedId)
-                   .SendAsync(AssignedId, $"A new ToDo '{todo.Title}' has been assigned to you By {todo.CreatedBy}");
-                        //await _notservices.AddNotificationAsync(AssignedId, $"A new ToDo '{todo.Title}' has been assigned to you.");
+      .SendAsync("ReceiveNotification", new
+      {
+          title = "You received a new ToDo Task!",
+          taskTitle = todo.Title,
+          assignedBy = todo.CreatedBy,
+          message = $"\"{todo.Title}\" has been assigned to you",
+          type = "TaskAssigned",
+          taskId = todo.Id,
+          createdAt = DateTime.UtcNow
+      }); 
                     }
                     await _unitOfWork.ToDos.Add(todoList);
                     
@@ -426,7 +435,7 @@ namespace MyErp.Core.Services
                 _mapper.Map(dto, existingTodo);
 
                 if (dto.ischecked == 1)
-                    existingTodo.LastCheckedAt = DateTime.UtcNow;
+                    existingTodo.LastCheckedAt = DateTime.Now;
                 else
                     existingTodo.LastCheckedAt = null;
 
@@ -463,7 +472,7 @@ namespace MyErp.Core.Services
                 todo.ischecked = (Status)status;
 
                 if (status == 1 || status == 2 || status == 3)
-                    todo.LastCheckedAt = DateTime.UtcNow;
+                    todo.LastCheckedAt = DateTime.Now;   
                 else
                     todo.LastCheckedAt = null;
 

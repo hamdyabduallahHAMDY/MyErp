@@ -31,7 +31,7 @@ namespace MyErp.Core.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
-
+       
         public byte[] GenerateExcelTemplate()
         {
             using (var package = new ExcelPackage())
@@ -46,23 +46,22 @@ namespace MyErp.Core.Services
     "Category",
     "PhoneNo",
     "Email",
-    "AssignedTo",
     "Status",
     "Country",
-    "Notes",
-    "DueDate",
-    "FeedBack",
-    "Website",
-    "Source",
+    "Notes", //8
+    "DueDate",//
+    "FeedBack",//10
+    "Website",//11
+    "Source",//12
     "CreatedAt",
-    "LastEdited",
+    "LastEdited",//14
     "Sector",
     "PiplineStage",
     "Note",
     "Probability",
-    "Channel",
+    "Channel",//19
     "EstValue",
-    "Services",
+    "Services",//21
     "FounderAcc",
     "NextFollowUp",
 
@@ -85,15 +84,46 @@ namespace MyErp.Core.Services
                 // 📏 Auto fit columns
                 worksheet.Cells.AutoFitColumns();
 
+                var statusValues = new List<string>
+{
+    "Cancel",
+    "NotInterested",
+    "Interested",
+    "NotResponding",
+    "Responding",
+    "FollowUp",
+    "Duplicated",
+    "NoAction"
+};
+                var Coutnry = new List<string> { "EG", "KSA" };
 
                 // 🧠 Sample row (VERY IMPORTANT FOR USERS)
-                worksheet.Cells[2, 1].Value = "John Doe";
-                worksheet.Cells[2, 2].Value = "01000000000";
-                worksheet.Cells[2, 3].Value = "john@email.com";
-                worksheet.Cells[2, 4].Value = "ABC Company";
-                worksheet.Cells[2, 5].Value = "71ce24f1-d875-427f-b1df-930f5895735d"; // AssignedTo (UserId)
-                worksheet.Cells[2, 6].Value = "FollowUp"; // Status (must match enum)
-                worksheet.Cells[2, 7].Value = "EG"; // Country (enum)
+                worksheet.Cells[2, 1].Value = "DemoCompany";
+                worksheet.Cells[2, 2].Value = "DemoLead";
+                worksheet.Cells[2, 3].Value = "manifucture";
+                worksheet.Cells[2, 4].Value = "01024455000";
+                worksheet.Cells[2, 5].Value = "body@gmail.com"; // AssignedTo (UserId)
+                worksheet.Cells[2, 6].Value = "Status";
+
+                // Dropdown for rows 2 → 100
+                var validation = worksheet.DataValidations.AddListValidation("F2:F100");
+
+                foreach (var value in statusValues)
+                {
+                    validation.Formula.Values.Add(value);
+                }
+
+                // Optional validation behavior
+                validation.ShowErrorMessage = true;
+                worksheet.Cells[2, 7].Value = "Country";
+
+                // Dropdown for rows 2 → 100
+                var validations = worksheet.DataValidations.AddListValidation("G2:G100");
+
+                foreach (var value in Coutnry)
+                {
+                    validations.Formula.Values.Add(value);
+                }
                 worksheet.Cells[2, 8].Value = "Important client";
                 worksheet.Cells[2, 9].Value = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd");
                 worksheet.Cells[2, 10].Value = "Waiting for response";
@@ -109,13 +139,12 @@ namespace MyErp.Core.Services
                 worksheet.Cells[2, 20].Value = "50000";
                 worksheet.Cells[2, 21].Value = "CRM System";
                 worksheet.Cells[2, 22].Value = "Founder1";
-                worksheet.Cells[2, 23].Value = DateTime.Now.AddDays(3).ToString("yyyy-MM-dd");
-                worksheet.Cells[2, 24].Value = "Hot Lead";
+                worksheet.Cells[2, 23].Value = "Hot Lead";
 
                 return package.GetAsByteArray();
             }
         }
-
+        
         public async Task<MainResponse<LeadStatusPercentage>> GetLeadsStatus(string UserId, DateTime dateFrom, DateTime dateTo)
         {
             MainResponse<LeadStatusPercentage> response = new MainResponse<LeadStatusPercentage>();
@@ -422,8 +451,6 @@ namespace MyErp.Core.Services
                     return response;
                 }
 
-                var todosToAdd = new List<Lead>();
-
                 using var ms = new MemoryStream();
                 await excelFile.CopyToAsync(ms);
                 ms.Position = 0;
@@ -436,66 +463,133 @@ namespace MyErp.Core.Services
                     response.errors?.Add("Worksheet not found.");
                     return response;
                 }
-                var Leads = new List<Lead>();
+
                 int rows = worksheet.Dimension?.Rows ?? 0;
+                int cols = worksheet.Dimension?.Columns ?? 0;
+
+                if (rows < 2)
+                {
+                    response.errors?.Add("No data rows found.");
+                    return response;
+                }
+
+                //Read Headers
+                var columnMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+                for (int c = 1; c <= cols; c++)
+                {
+                    var header = worksheet.Cells[1, c].Text?.Trim();
+
+                    if (!string.IsNullOrWhiteSpace(header) && !columnMap.ContainsKey(header))
+                        columnMap.Add(header, c);
+                }
+
+                string GetValue(int row, string columnName)
+                {
+                    if (!columnMap.ContainsKey(columnName))
+                        return string.Empty;
+
+                    return worksheet.Cells[row, columnMap[columnName]].Text?.Trim();
+                }
+
+                var leads = new List<Lead>();
 
                 for (int r = 2; r <= rows; r++)
                 {
-                    var name = worksheet.Cells[r, 1].Text?.Trim();
+                    var name = GetValue(r, "Name");
 
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
 
-                    var phone = worksheet.Cells[r, 2].Text?.Trim();
-                    var email = worksheet.Cells[r, 3].Text?.Trim();
-                    var company = worksheet.Cells[r, 4].Text?.Trim();
-                    var statusText = worksheet.Cells[r, 5].Text?.Trim();
-                    var owner = worksheet.Cells[r, 12].Text?.Trim();
-                    var countryText = worksheet.Cells[r, 7].Text?.Trim();
-                    var notes = worksheet.Cells[r, 8].Text?.Trim();
-                    var dueDateText = worksheet.Cells[r, 9].Text?.Trim();
-                    var feedback = worksheet.Cells[r, 10].Text?.Trim();
-                    var Website = worksheet.Cells[r, 11].Text?.Trim();
-                    var AssginedTo = worksheet.Cells[r, 6].Text?.Trim();
-                    var Sector = worksheet.Cells[r, 13].Text?.Trim();
-                    Enum.TryParse(statusText, true, out LeadStatus status);
+                    var companyName = GetValue(r, "CompanyName");
+                    var category = GetValue(r, "Category");
+                    var phoneNo = GetValue(r, "PhoneNo");
+                    var email = GetValue(r, "Email");
+                    var statusText = GetValue(r, "Status");
+                    var countryText = GetValue(r, "Country");
+                    var notes = GetValue(r, "Notes");
+                    var dueDateText = GetValue(r, "DueDate");
+                    var feedback = GetValue(r, "FeedBack");
+                    var website = GetValue(r, "Website");
+                    var source = GetValue(r, "Source");
+                    var createdAtText = GetValue(r, "CreatedAt");
+                    var lastEditedText = GetValue(r, "LastEdited");
+                    var sector = GetValue(r, "Sector");
+                    var piplineStage = GetValue(r, "PiplineStage");
+                    var note = GetValue(r, "Note");
+                    var probability = GetValue(r, "Probability");
+                    var channel = GetValue(r, "Channel");
+                    var estValueText = GetValue(r, "EstValue");
+                    var services = GetValue(r, "Services");
+                    var founderAcc = GetValue(r, "FounderAcc");
+                    var nextFollowUpText = GetValue(r, "NextFollowUp");
+
                     Enum.TryParse(countryText, true, out EG_KSA country);
 
                     DateTime? dueDate = null;
-                    if (DateTime.TryParse(dueDateText, out DateTime parsedDate))
-                        dueDate = parsedDate;
+                    if (DateTime.TryParse(dueDateText, out DateTime parsedDueDate))
+                        dueDate = parsedDueDate;
 
+                    DateTime createdAt = DateTime.Now;
+                    if (DateTime.TryParse(createdAtText, out DateTime parsedCreatedAt))
+                        createdAt = parsedCreatedAt;
+
+                    DateTime? lastEdited = null;
+                    if (DateTime.TryParse(lastEditedText, out DateTime parsedLastEdited))
+                        lastEdited = parsedLastEdited;
+
+                    DateTime? nextFollowUp = null;
+                    if (DateTime.TryParse(nextFollowUpText, out DateTime parsedNextFollowUp))
+                        nextFollowUp = parsedNextFollowUp;
+
+                    decimal? estValue = null;
+                    if (decimal.TryParse(estValueText, out decimal parsedEstValue))
+                        estValue = parsedEstValue;
 
                     var dto = new LeadDTO
                     {
                         Name = name,
-                        PhoneNo = phone,
+                        CompanyName = companyName,
+                        Category = category,
+                        PhoneNo = phoneNo,
                         Email = email,
-                        CompanyName = company,
-                        AssignedTo = AssginedTo,
+                        AssignedTo = CreatedBy,
                         Status = ParseLeadStatus(statusText),
                         Country = country,
                         Notes = notes,
-                        Website = Website,
                         DueDate = dueDate,
                         FeedBack = feedback,
-                        Sector = Sector,
+                        Website = website,
+                        Source = source,
+                        Sector = sector,
+                        PiplineStage = piplineStage,
+                        Note = note,
+                        Probability = probability,
+                        Channel = channel,
+                        EstValue = estValue.ToString(),
+                        Services = services,
+                        FounderAcc = founderAcc,
+                        NextFollowUp = nextFollowUp.ToString()
                     };
+
                     var lead = _mapper.Map<Lead>(dto);
+
                     lead.CreatedBy = CreatedBy;
-                    lead.CreatedAt = DateTime.Now;
-                    Leads.Add(lead);
+                    lead.CreatedAt = createdAt;
+                    lead.LastEdited = lastEdited;
+
+                    leads.Add(lead);
                 }
 
-                if (!Leads.Any())
+                if (!leads.Any())
                 {
                     response.errors?.Add("No valid rows found.");
                     return response;
                 }
 
-                await _unitOfWork.Leads.Add(Leads);
+                await _unitOfWork.Leads.Add(leads);
 
-                response.acceptedObjects = Leads;
+                response.acceptedObjects = leads;
             }
             catch (Exception ex)
             {
@@ -508,7 +602,6 @@ namespace MyErp.Core.Services
 
             return response;
         }
-
         public async Task<MainResponse<Lead>> GetRespondingLeads(string Name)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -679,7 +772,7 @@ namespace MyErp.Core.Services
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
+                response?.errors?.Add(ex.Message);
             }
             return response;
         }

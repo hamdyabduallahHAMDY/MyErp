@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MyErp.Core.Interfaces;
 using MyErp.Core.Models;
+using System.Text.Json;
 
 namespace MyErp.Core.Services
 {
@@ -35,38 +36,71 @@ namespace MyErp.Core.Services
                     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
                     var hub = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
 
-                    var now = DateTime.Now;
-                    
-                    var tasks = await unitOfWork.CalenderTasks.GetAll(t =>
-                        t.ReminderTime <= now && t.IsReminderSent == false );
+                    var now = DateTime.UtcNow;
 
-                    _logger.LogInformation($"Found {tasks.Count()} tasks to process");
+                    var tasks = await unitOfWork.CalenderTasks.GetAll(t =>
+                        t.ReminderTime <= now && t.IsReminderSent == false);
+
+                    _logger.LogInformation("Found {Count} tasks to process", tasks.Count());
 
                     foreach (var task in tasks)
                     {
-                        var user = await userManager.FindByNameAsync(task.CreatedBy);
-                      //  task.IsReminderSent = true;
-                      //  await unitOfWork.CalenderTasks.Update(task);
-                        if (user == null)
+                        // 🔥 Parse assigned users (JSON or fallback)
+                        List<string> assignedUsers = new();
+
+                        if (!string.IsNullOrEmpty(task.AssignedTo))
                         {
-                            _logger.LogWarning($"User not found for task {task.Title}");
-                            continue;
+                            try
+                            {
+                                assignedUsers = JsonSerializer.Deserialize<List<string>>(task.AssignedTo)
+                                                ?? new List<string>();
+                            }
+                            catch
+                            {
+                                assignedUsers.Add(task.AssignedTo);
+                            }
                         }
 
-                        var notification = new Notification
+                        foreach (var username in assignedUsers)
                         {
-                            UserId = user.Id,
-                            Message = task.Title,
-                            CreatedAt = DateTime.UtcNow,
-                            IsRead = false,
-                            CreatedBy = task.CreatedBy
-                        };
+                            var user = await userManager.FindByNameAsync(username);
 
-                        await unitOfWork.Notifications.Add(notification);
-                        _logger.LogCritical("sentNotif");
-                        await hub.Clients.User(user.Id)
-                            .SendAsync("ReceiveNotification", $"Reminder for a CalenderTask '{task.Title}'");
+                            if (user == null)
+                            {
+                                _logger.LogWarning("User not found: {Username}", username);
+                                continue;
+                            }
 
+                            // 🔥 Save notification
+                            var notification = new Notification
+                            {
+                                UserId = user.Id,
+                                title = "Reminder for Calendar Task!",
+                                Message = task.Title,
+                                CreatedAt = DateTime.UtcNow,
+                                IsRead = false,
+                                CreatedBy = task.CreatedBy
+                            };
+
+                            await unitOfWork.Notifications.Add(notification);
+
+                            // 🔥 Send SignalR notification
+                            await hub.Clients.User(user.Id)
+                                .SendAsync("ReceiveNotification", new
+                                {
+                                    title = "Reminder for Calendar Task!",
+                                    taskTitle = task.Title,
+                                    assignedBy = task.CreatedBy,
+                                    message = $"\"{task.Title}\" is due soon",
+                                    type = "CalendarTaskReminder",
+                                    createdAt = DateTime.UtcNow
+                                });
+
+                            _logger.LogInformation("Reminder sent for task {Task} to {User}",
+                                task.Title, username);
+                        }
+
+                        // 🔥 Mark task as processed AFTER all users handled
                         task.IsReminderSent = true;
                     }
 
