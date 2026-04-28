@@ -19,6 +19,13 @@ namespace MyErp.Core.Models
             Closed = 2,
             archived = 3
         }
+    public enum RowStatus
+    {
+        Active,
+        Delete
+
+    }
+
     public enum CustomerStatus
     {
         planning = 0 ,
@@ -50,6 +57,7 @@ namespace MyErp.Core.Models
         Duplicated = 5,
         NotResponding = 6,
         NoAction = 7,
+        NoAnswer = 8,
     }
 
     public enum EG_KSA

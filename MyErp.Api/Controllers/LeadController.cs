@@ -17,37 +17,58 @@ namespace MyErp.Api.Controllers
     [ApiController]
     public class LeadController : Controller
     {
-        LeadServices LeadServices;
-        private readonly IMapper _mapper;
         private readonly RightsModelServices _accessService;
-        public LeadController(ApplicationDbContext dBContext, IMapper mapper, RightsModelServices accessService)
+        private readonly LeadServices LeadServices;
+
+      
+
+        public LeadController(LeadServices leadServices, RightsModelServices accessService)
         {
-            UnitOfWork unitOfWork = new UnitOfWork(dBContext);
-            _mapper = mapper;
-            LeadServices = new LeadServices(unitOfWork, _mapper);
+            LeadServices = leadServices;
             _accessService = accessService;
         }
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
         {
-            var result = await LeadServices.deleteAll();
-            var resultWithStatusCode = ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
 
-            return resultWithStatusCode;
+            Logger.Logs.Log($"User : [{currentUser}] Deleting ALL leads");
+
+            try
+            {
+                var result = await LeadServices.deleteAll(currentUser);
+
+                Logger.Logs.Log($"User : [{currentUser}] DeleteAll result | Deleted count: {result?.acceptedObjects?.Count}");
+
+                return ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
+            }
+            catch (Exception ex)
+            {
+                Logger.Logs.Log($"User : [{currentUser}] ERROR in DeleteAll: {ex}");
+                throw;
+            }
         }
+
         [HttpGet("getAll")]
         public async Task<IActionResult> GetLeadList()
         {
-            var (currentUser, allowedUsers, isAuth , usertype) = _accessService.GetAccessData(User);
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
 
-          
+            Logger.Logs.Log($"User : [{currentUser}] Requesting all leads | AllowedUsers: {string.Join(",", allowedUsers ?? new List<string>())}");
 
-            var result = await LeadServices.GetAllLeads(allowedUsers);
+            try
+            {
+                var result = await LeadServices.GetAllLeads(allowedUsers);
 
-            var resultWithStatusCode =
-                ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpGet");
+                Logger.Logs.Log($"User : [{currentUser}] Retrieved leads count: {result?.acceptedObjects?.Count}");
 
-            return resultWithStatusCode;
+                return ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpGet");
+            }
+            catch (Exception ex)
+            {
+                Logger.Logs.Log($"User : [{currentUser}] ERROR in GetLeadList: {ex}");
+                throw;
+            }
         }
 
 
@@ -113,59 +134,85 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
-        //[Authorize]
-        // ADD LEAD
         [HttpPost("add")]
         public async Task<IActionResult> AddLead([FromBody] LeadDTO leadDTOs)
         {
             var currentUser = User.Identity?.Name;
+
+            Logger.Logs.Log($"User : [{currentUser}] Adding new lead | Payload: {System.Text.Json.JsonSerializer.Serialize(leadDTOs)}");
+
             if (currentUser == null)
             {
-                return Unauthorized(new
-                {
-                    message = "You must log in first."
-                });
+                Logger.Logs.Log("Unauthorized access attempt in AddLead");
+                return Unauthorized(new { message = "You must log in first." });
             }
-            var result = await LeadServices.AddLead(leadDTOs, currentUser);
 
-            var resultWithStatusCode =
-                ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
+            try
+            {
+                var result = await LeadServices.AddLead(leadDTOs, currentUser);
 
-            return resultWithStatusCode;
+                Logger.Logs.Log($"User : [{currentUser}] Lead add result | Accepted: {result?.acceptedObjects?.Count}, Errors: {result?.errors?.Count}");
+
+                return ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
+            }
+            catch (Exception ex)
+            {
+                Logger.Logs.Log($"User : [{currentUser}] ERROR while adding lead: {ex}");
+                throw;
+            }
         }
+
         [Authorize]
-        // IMPORT FROM EXCEL
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
             var currentUser = User.Identity?.Name;
+
+            Logger.Logs.Log($"User : [{currentUser}] Importing Excel file: {file?.FileName}");
+
             if (currentUser == null)
             {
-                return Unauthorized(new
-                {
-                    message = "You must log in first."
-                });
+                Logger.Logs.Log("Unauthorized access attempt in ImportFromExcel");
+                return Unauthorized(new { message = "You must log in first." });
             }
 
-            var result = await LeadServices.ImportFromExcel(file , currentUser);
+            try
+            {
+                var result = await LeadServices.ImportFromExcel(file, currentUser);
 
-            var resultWithStatusCode =
-                ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
+                Logger.Logs.Log($"User : [{currentUser}] Excel import result | Accepted: {result?.acceptedObjects?.Count}, Errors: {result?.errors?.Count}");
 
-            return resultWithStatusCode;
+                return ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpPost");
+            }
+            catch (Exception ex)
+            {
+                Logger.Logs.Log($"User : [{currentUser}] ERROR importing Excel: {ex}");
+                throw;
+            }
         }
 
-        // DELETE LEAD
         [HttpDelete("deleteById")]
         public async Task<IActionResult> DeleteLead(int id)
         {
-            var result = await LeadServices.DeleteLead(id);
+            var currentUser = User.Identity?.Name;
 
-            var resultWithStatusCode =
-                ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
+            Logger.Logs.Log($"User : [{currentUser}] Deleting lead with ID: {id}");
 
-            return resultWithStatusCode;
+            try
+            {
+                var result = await LeadServices.DeleteLead(id);
+
+                Logger.Logs.Log($"User : [{currentUser}] Deleted lead with ID: {id}");
+
+                return ResponseStatusCode<Lead>.GetApiResponseCode(result, "HttpDelete");
+            }
+            catch (Exception ex)
+            {
+                Logger.Logs.Log($"User : [{currentUser}] ERROR deleting lead ID [{id}]: {ex}");
+                throw;
+            }
         }
+
         [HttpGet("getCountByStatus")]
         public async Task<IActionResult> GetCountByStatus()
         { 
@@ -200,6 +247,7 @@ namespace MyErp.Api.Controllers
 
             return resultWithStatusCode;
         }
+
         [HttpGet("leads/today-by-user")]
         public async Task<IActionResult> GetLeadsTodayByUsers()
         {

@@ -17,8 +17,7 @@ namespace MyErp.Core.Models
         public int NoAction { get; set; }
         public int Responding { get; set; }
         public int FollowUp { get; set; }
-
-
+        public int NoAnswer { get; set; }
 
     }
 }

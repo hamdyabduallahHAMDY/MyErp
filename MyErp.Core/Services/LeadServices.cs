@@ -1,13 +1,16 @@
 ﻿using AutoMapper;
 using Logger;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualBasic;
 using MyErp.Core.DTO;
 using MyErp.Core.Global;
 using MyErp.Core.HTTP;
 using MyErp.Core.Interfaces;
+using System.Linq.Expressions;
+
 using MyErp.Core.Models;
 using MyErp.Core.Validation;
 using OfficeOpenXml;
@@ -16,6 +19,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -93,7 +97,8 @@ namespace MyErp.Core.Services
     "Responding",
     "FollowUp",
     "Duplicated",
-    "NoAction"
+    "NoAction",
+    "NoAnswer"
 };
                 var Coutnry = new List<string> { "EG", "KSA" };
 
@@ -223,12 +228,7 @@ namespace MyErp.Core.Services
 
                 result.Add(new LeadsStatusbyAssignedUser
                 {
-                    //Name = user,
-                    //Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
-                    //NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
-                    //Interested = userLeads.Count(l => l.Status == LeadStatus.Interested),
-                    //NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
-                    //FollowUp = userLeads.Count(l => l.Status == LeadStatus.FollowUp),
+                 
                     Name = user,
                     Cancel = userLeads.Count(l => l.Status == LeadStatus.Cancel),
                     NotInterested = userLeads.Count(l => l.Status == LeadStatus.NotInterested),
@@ -238,6 +238,7 @@ namespace MyErp.Core.Services
                     NotResponding = userLeads.Count(l => l.Status == LeadStatus.NotResponding),
                     Responding = userLeads.Count(l => l.Status == LeadStatus.responding),
                     NoAction = userLeads.Count(l => l.Status == LeadStatus.NoAction),
+                    NoAnswer = userLeads.Count(l => l.Status == LeadStatus.NoAnswer)
                 });
             }
 
@@ -249,32 +250,73 @@ namespace MyErp.Core.Services
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
 
-            if (allowedUsers == null || !allowedUsers.Any())
+            try
             {
-                response.acceptedObjects = new List<Lead>();
-                return response;
+                if (allowedUsers == null || !allowedUsers.Any())
+                {
+                    return response;
+                }
+
+                allowedUsers = allowedUsers
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .ToList();
+
+                if (!allowedUsers.Any())
+                {
+                    return response;
+                }
+
+                var predicate = BuildAllowedUsersPredicate(allowedUsers);
+
+                var leads = await _unitOfWork.Leads
+                    .GetQueryable()
+                    .Where(predicate)
+                    .ToListAsync();
+
+                if (!leads.Any())
+                {
+                    response.errors.Add(Errors.ObjectNotFound());
+                    return response;
+                }
+
+                response.acceptedObjects = leads;
             }
-
-            // Get ALL leads once
-            var allLeads = await _unitOfWork.Leads.GetAll();
-
-            // Filter in memory (safe)
-            var filtered = allLeads
-                .Where(l =>
-                    allowedUsers.Contains(l.CreatedBy) ||
-                    allowedUsers.Contains(l.AssignedTo))
-                .ToList();
-
-            if (!filtered.Any())
+            catch (Exception ex)
             {
-                response.errors.Add(Errors.ObjectNotFound());
-                return response;
-            }
+                Logs.Log(ex.ToString());
+                response.errors.Add(ex.Message);
 
-            response.acceptedObjects = filtered;
+                if (ex.InnerException != null)
+                    response.errors.Add(ex.InnerException.Message);
+            }
 
             return response;
         }
+
+        private static Expression<Func<Lead, bool>> BuildAllowedUsersPredicate(List<string> allowedUsers)
+    {
+        var param = Expression.Parameter(typeof(Lead), "l");
+        Expression body = Expression.Constant(false);
+
+        foreach (var user in allowedUsers)
+        {
+            var createdByExpr = Expression.Equal(
+                Expression.Property(param, nameof(Lead.CreatedBy)),
+                Expression.Constant(user)
+            );
+
+            var assignedToExpr = Expression.Equal(
+                Expression.Property(param, nameof(Lead.AssignedTo)),
+                Expression.Constant(user)
+            );
+
+            var userMatchExpr = Expression.OrElse(createdByExpr, assignedToExpr);
+            body = Expression.OrElse(body, userMatchExpr);
+        }
+
+        return Expression.Lambda<Func<Lead, bool>>(body, param);
+    }
 
         public async Task<MainResponse<Lead>> GetLead(int id)
         {
@@ -427,7 +469,7 @@ namespace MyErp.Core.Services
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
 
-            var user = await _unitOfWork.Leads.DeletePhysical(p => p.Id == id);
+            var user = await _unitOfWork.Leads.Delete(p => p.Id == id);
 
             if (user == null)
             {
@@ -439,15 +481,18 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile, string CreatedBy)
+        public async Task<MainResponse<Lead>> ImportFromExcel(IFormFile excelFile, string createdBy)
         {
             var response = new MainResponse<Lead>();
+            response.errors ??= new List<string>();
 
             try
             {
+                Logs.Log($"[USER: {createdBy}] ImportFromExcel started");
+
                 if (excelFile == null || excelFile.Length == 0)
                 {
-                    response.errors?.Add("Excel file is empty.");
+                    response.errors.Add("Excel file is empty.");
                     return response;
                 }
 
@@ -460,7 +505,7 @@ namespace MyErp.Core.Services
 
                 if (worksheet == null)
                 {
-                    response.errors?.Add("Worksheet not found.");
+                    response.errors.Add("Worksheet not found.");
                     return response;
                 }
 
@@ -469,135 +514,141 @@ namespace MyErp.Core.Services
 
                 if (rows < 2)
                 {
-                    response.errors?.Add("No data rows found.");
+                    response.errors.Add("No data rows found.");
                     return response;
                 }
 
-                //Read Headers
                 var columnMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
                 for (int c = 1; c <= cols; c++)
                 {
                     var header = worksheet.Cells[1, c].Text?.Trim();
-
                     if (!string.IsNullOrWhiteSpace(header) && !columnMap.ContainsKey(header))
                         columnMap.Add(header, c);
                 }
 
                 string GetValue(int row, string columnName)
                 {
-                    if (!columnMap.ContainsKey(columnName))
+                    if (!columnMap.TryGetValue(columnName, out int col))
                         return string.Empty;
 
-                    return worksheet.Cells[row, columnMap[columnName]].Text?.Trim();
+                    return worksheet.Cells[row, col].Text?.Trim() ?? string.Empty;
                 }
 
-                var leads = new List<Lead>();
+                var acceptedBatch = new List<Lead>(500);
+                var rejectedLeads = new List<Lead>();
+                var now = DateTime.Now;
+                int importedCount = 0;
+
+                const int batchSize = 500;
 
                 for (int r = 2; r <= rows; r++)
                 {
-                    var name = GetValue(r, "Name");
-
-                    if (string.IsNullOrWhiteSpace(name))
-                        continue;
-
-                    var companyName = GetValue(r, "CompanyName");
-                    var category = GetValue(r, "Category");
-                    var phoneNo = GetValue(r, "PhoneNo");
-                    var email = GetValue(r, "Email");
-                    var statusText = GetValue(r, "Status");
-                    var countryText = GetValue(r, "Country");
-                    var notes = GetValue(r, "Notes");
-                    var dueDateText = GetValue(r, "DueDate");
-                    var feedback = GetValue(r, "FeedBack");
-                    var website = GetValue(r, "Website");
-                    var source = GetValue(r, "Source");
-                    var createdAtText = GetValue(r, "CreatedAt");
-                    var lastEditedText = GetValue(r, "LastEdited");
-                    var sector = GetValue(r, "Sector");
-                    var piplineStage = GetValue(r, "PiplineStage");
-                    var note = GetValue(r, "Note");
-                    var probability = GetValue(r, "Probability");
-                    var channel = GetValue(r, "Channel");
-                    var estValueText = GetValue(r, "EstValue");
-                    var services = GetValue(r, "Services");
-                    var founderAcc = GetValue(r, "FounderAcc");
-                    var nextFollowUpText = GetValue(r, "NextFollowUp");
-
-                    Enum.TryParse(countryText, true, out EG_KSA country);
-
-                    DateTime? dueDate = null;
-                    if (DateTime.TryParse(dueDateText, out DateTime parsedDueDate))
-                        dueDate = parsedDueDate;
-
-                    DateTime createdAt = DateTime.Now;
-                    if (DateTime.TryParse(createdAtText, out DateTime parsedCreatedAt))
-                        createdAt = parsedCreatedAt;
-
-                    DateTime? lastEdited = null;
-                    if (DateTime.TryParse(lastEditedText, out DateTime parsedLastEdited))
-                        lastEdited = parsedLastEdited;
-
-                    DateTime? nextFollowUp = null;
-                    if (DateTime.TryParse(nextFollowUpText, out DateTime parsedNextFollowUp))
-                        nextFollowUp = parsedNextFollowUp;
-
-                    decimal? estValue = null;
-                    if (decimal.TryParse(estValueText, out decimal parsedEstValue))
-                        estValue = parsedEstValue;
-
-                    var dto = new LeadDTO
+                    try
                     {
-                        Name = name,
-                        CompanyName = companyName,
-                        Category = category,
-                        PhoneNo = phoneNo,
-                        Email = email,
-                        AssignedTo = CreatedBy,
-                        Status = ParseLeadStatus(statusText),
-                        Country = country,
-                        Notes = notes,
-                        DueDate = dueDate,
-                        FeedBack = feedback,
-                        Website = website,
-                        Source = source,
-                        Sector = sector,
-                        PiplineStage = piplineStage,
-                        Note = note,
-                        Probability = probability,
-                        Channel = channel,
-                        EstValue = estValue.ToString(),
-                        Services = services,
-                        FounderAcc = founderAcc,
-                        NextFollowUp = nextFollowUp.ToString()
-                    };
+                        var companyName = GetValue(r, "CompanyName");
+                        if (string.IsNullOrWhiteSpace(companyName))
+                            continue;
 
-                    var lead = _mapper.Map<Lead>(dto);
+                        var dto = new LeadDTO
+                        {
+                            Name = GetValue(r, "Name"),
+                            CompanyName = companyName,
+                            Category = GetValue(r, "Category"),
+                            PhoneNo = GetValue(r, "PhoneNo"),
+                            Email = GetValue(r, "Email"),
+                            AssignedTo = createdBy,
+                            Status = ParseLeadStatus(GetValue(r, "Status")),
+                            Country = Enum.TryParse(GetValue(r, "Country"), true, out EG_KSA country) ? country : default,
+                            Notes = GetValue(r, "Notes"),
+                            DueDate = DateTime.TryParse(GetValue(r, "DueDate"), out var dueDate) ? dueDate : null,
+                            FeedBack = GetValue(r, "FeedBack"),
+                            Website = GetValue(r, "Website"),
+                            Source = GetValue(r, "Source"),
+                            Sector = GetValue(r, "Sector"),
+                            PiplineStage = GetValue(r, "PiplineStage"),
+                            Note = GetValue(r, "Note"),
+                            Probability = GetValue(r, "Probability"),
+                            Channel = GetValue(r, "Channel"),
+                            EstValue = GetValue(r, "EstValue"),
+                            Services = GetValue(r, "Services"),
+                            FounderAcc = GetValue(r, "FounderAcc"),
+                            NextFollowUp = GetValue(r, "NextFollowUp")
+                        };
 
-                    lead.CreatedBy = CreatedBy;
-                    lead.CreatedAt = createdAt;
-                    lead.LastEdited = lastEdited;
+                        var validList = await ValidateDTO.LeadDTO(dto);
 
-                    leads.Add(lead);
+                        if (validList.acceptedObjects != null && validList.acceptedObjects.Any())
+                        {
+                            var accepted = _mapper.Map<List<Lead>>(validList.acceptedObjects);
+
+                            foreach (var lead in accepted)
+                            {
+                                lead.CreatedBy = createdBy;
+                                lead.PhoneNo = dto.PhoneNo?.RemoveAllWhitespace();
+                                lead.CreatedAt = now;
+                                acceptedBatch.Add(lead);
+                            }
+                        }
+
+                        if (validList.rejectedObjects != null && validList.rejectedObjects.Any())
+                        {
+                            var rejected = _mapper.Map<List<Lead>>(validList.rejectedObjects);
+                            rejectedLeads.AddRange(rejected);
+
+                            if (validList.errors != null && validList.errors.Any())
+                                response.errors.AddRange(validList.errors.Select(e => $"Row {r}: {e}"));
+                        }
+
+                        if (acceptedBatch.Count >= batchSize)
+                        {
+                            await _unitOfWork.Leads.Add(acceptedBatch);
+                            importedCount += acceptedBatch.Count;
+                            Logs.Log($"[USER: {createdBy}] Imported batch of {acceptedBatch.Count} leads");
+                            acceptedBatch.Clear();
+                        }
+                    }
+                    catch (Exception rowEx)
+                    {
+                        Logs.Log($"[USER: {createdBy}] Error parsing row {r}: {rowEx.Message}");
+                        response.errors.Add($"Row {r}: {rowEx.Message}");
+                    }
                 }
 
-                if (!leads.Any())
+                if (acceptedBatch.Any())
                 {
-                    response.errors?.Add("No valid rows found.");
-                    return response;
+                    await _unitOfWork.Leads.Add(acceptedBatch);
+                    importedCount += acceptedBatch.Count;
+                    Logs.Log($"[USER: {createdBy}] Imported final batch of {acceptedBatch.Count} leads");
                 }
 
-                await _unitOfWork.Leads.Add(leads);
+                // 🚨 IMPORTANT FIX
+                if (importedCount > 0 && !response.errors.Any())
+                {
+                    // Add ONE dummy object so your ResponseStatusCode returns 200 instead of 405
+                    response.acceptedObjects = new List<Lead>
+            {
+                new Lead()
+            };
 
-                response.acceptedObjects = leads;
+                    response.rejectedObjects = new List<Lead>();
+                    Logs.Log($"[USER: {createdBy}] Imported total {importedCount} valid leads");
+                }
+                else
+                {
+                    response.acceptedObjects = new List<Lead>();
+                    response.rejectedObjects = rejectedLeads.Take(100).ToList();
+
+                    if (importedCount == 0 && !response.errors.Any())
+                        response.errors.Add("No valid rows found.");
+                }
             }
             catch (Exception ex)
             {
-                Logs.Log(ex.ToString());
-                response.errors?.Add(ex.Message);
+                Logs.Log($"[USER: {createdBy}] ImportFromExcel failed: {ex}");
+                response.errors.Add(ex.Message);
 
                 if (ex.InnerException != null)
-                    response.errors?.Add(ex.InnerException.Message);
+                    response.errors.Add(ex.InnerException.Message);
             }
 
             return response;
@@ -642,14 +693,15 @@ namespace MyErp.Core.Services
                     .Where(l => allowed.Contains(l.CreatedBy))
                     .ToList();
 
-                var result = leads
-                    .GroupBy(l => l.Status)
-                    .Select(g => new LeadStatusCountDTO
-                    {
-                        Status = (int)g.Key,
-                        Count = g.Count()
-                    })
-                    .ToList();
+                var result = await _unitOfWork.Leads.GetQueryable()
+    .Where(l => allowedUsers.Contains(l.CreatedBy))
+    .GroupBy(l => l.Status)
+    .Select(g => new LeadStatusCountDTO
+    {
+        Status = (int)g.Key,
+        Count = g.Count()
+    })
+    .ToListAsync();
 
                 response.acceptedObjects = result;
             }
@@ -721,10 +773,11 @@ namespace MyErp.Core.Services
                 "duplicated" => LeadStatus.Duplicated,
                 "not responding" => LeadStatus.NotResponding,
                 "No Action" => LeadStatus.NoAction,
+                "NoAnswer" => LeadStatus.NoAnswer,
                 _ => LeadStatus.NotResponding
             };
         }
-        // DELETE GROUP
+
         public async Task<MainResponse<Lead>> deleteGroup(List<int> ids)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
@@ -733,7 +786,7 @@ namespace MyErp.Core.Services
             {
                 foreach (var id in ids)
                 {
-                    var deletedTodos = await _unitOfWork.Leads.DeletePhysical(p => p.Id == id);
+                    var deletedTodos = await _unitOfWork.Leads.Delete(p => p.Id == id);
                     if (deletedTodos == null || !deletedTodos.Any())
                     {
                         response.errors?.Add($"id = {id} not found");
@@ -748,17 +801,17 @@ namespace MyErp.Core.Services
             catch (Exception ex)
             {
                 Logs.Log(ex.ToString());
-                response.errors.Add(ex.Message);
+                response.errors?.Add(ex.Message);
             }
             return response;
         }
 
-        public async Task<MainResponse<Lead>> deleteAll()
+        public async Task<MainResponse<Lead>> deleteAll(string user)
         {
             MainResponse<Lead> response = new MainResponse<Lead>();
             try
             {
-                var deletedLeads = await _unitOfWork.Leads.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Leads.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

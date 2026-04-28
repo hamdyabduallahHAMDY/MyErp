@@ -9,7 +9,7 @@ namespace MyErp.Core.DTO
 {
     public class LeadDTO
     {
-       
+        
         public string? Name { get; set; }
         public string? PhoneNo { get; set; }
         public string? Email { get; set; }
@@ -53,5 +53,10 @@ namespace MyErp.Core.DTO
         public int FollowUp { get; set; }
         public int Duplicated { get; set; }
         public int NoAction { get; set; }
+        public int NoAnswer { get; set; }
+    }
+    public class ImportResultDto
+    {
+        public int TotalInserted { get; set; }
     }
 }

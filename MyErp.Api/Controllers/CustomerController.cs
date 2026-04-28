@@ -31,7 +31,9 @@ namespace MyErp.Api.Controllers
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
         {
-            var result = await CustomerServices.deleteAll();
+            var user = User.Identity?.Name;
+
+            var result = await CustomerServices.deleteAll(user);
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
@@ -51,7 +53,9 @@ namespace MyErp.Api.Controllers
         [HttpGet("getAllowedCustomer")]
         public async Task<IActionResult> GetAllowedCustomer()
         {
+         
             var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
+            Logger.Logs.Log("user entered the endpoooooooooooooooooooooooooooooooooooooooooooooooooooooooooint");
             var result = await CustomerServices.getProjectsByAccess(currentUser);
             var resultWithStatusCode = ResponseStatusCode<Customer>.GetApiResponseCode(result, "HttpGet");
             return resultWithStatusCode;

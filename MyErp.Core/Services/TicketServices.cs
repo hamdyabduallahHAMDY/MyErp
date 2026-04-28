@@ -251,7 +251,7 @@ namespace MyErp.Core.Services
         {
             MainResponse<Ticket> response = new MainResponse<Ticket>();
 
-            var user = await _unitOfWork.Tickets.DeletePhysical(p => p.Id == id);
+            var user = await _unitOfWork.Tickets.Delete(p => p.Id == id);
 
             if (user == null)
             {
@@ -262,12 +262,12 @@ namespace MyErp.Core.Services
             response.acceptedObjects = new List<Ticket> { user.First() };
             return response;
         }
-        public async Task<MainResponse<Ticket>> deleteAll()
+        public async Task<MainResponse<Ticket>> deleteAll(string user)
         {
             MainResponse<Ticket> response = new MainResponse<Ticket>();
             try
             {
-                var deletedLeads = await _unitOfWork.Tickets.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Tickets.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

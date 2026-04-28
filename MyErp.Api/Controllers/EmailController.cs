@@ -29,7 +29,8 @@ namespace MyErp.Api.Controllers
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
         {
-            var result = await EmailServices.deleteAll();
+            var user = User.Identity?.Name;
+            var result = await EmailServices.deleteAll(user);
             var resultWithStatusCode = ResponseStatusCode<Email>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;

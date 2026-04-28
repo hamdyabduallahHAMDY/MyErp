@@ -288,6 +288,7 @@ namespace MyErp.Core.Services
 
             return response;
         }
+
         public async Task<byte[]> GenerateDocumentExcelTemplate()
         {
             using var package = new ExcelPackage();
@@ -311,15 +312,13 @@ namespace MyErp.Core.Services
 
             return await package.GetAsByteArrayAsync();
         }
-        // =========================
-        // Delete Document
-        // =========================
+       
         public async Task<MainResponse<Document>> deleteDocument(int id)
         {
             MainResponse<Document> response = new MainResponse<Document>();
 
             var document =
-                await _unitOfWork.Documents.DeletePhysical(p => p.Id == id);
+                await _unitOfWork.Documents.Delete(p => p.Id == id);
 
             if (document == null)
             {
@@ -341,7 +340,7 @@ namespace MyErp.Core.Services
             {
                 foreach (var id in ids)
                 {
-                    var deletedDocuments = await _unitOfWork.Documents.DeletePhysical(p => p.Id == id);
+                    var deletedDocuments = await _unitOfWork.Documents.Delete(p => p.Id == id);
                     if (deletedDocuments == null || !deletedDocuments.Any())
                     {
                         response.errors?.Add($"id = {id} not found");
@@ -361,12 +360,12 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Document>> deleteAll()
+        public async Task<MainResponse<Document>> deleteAll(string user)
         {
             MainResponse<Document> response = new MainResponse<Document>();
             try
             {
-                var deletedLeads = await _unitOfWork.Documents.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Documents.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

@@ -103,6 +103,42 @@ namespace MyErp.Core.Validation
             
             return response;
         }
+        public static MainResponse<ToDoDTO> ValidateToDoDTO(
+    ToDoDTO todo,
+    HashSet<string> existingTitles,
+    bool isUpdate = false)
+        {
+            var response = new MainResponse<ToDoDTO>();
+            bool hasError = false;
+
+            if (todo == null)
+            {
+                response.errors.Add("Row is empty.");
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(todo.Title))
+            {
+                response.errors.Add("Title is required.");
+                response.rejectedObjects.Add(todo);
+                hasError = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(todo.Title)
+                && existingTitles.Contains(todo.Title.Trim())
+                && !isUpdate)
+            {
+                response.errors.Add("Title already exists in database.");
+                response.rejectedObjects.Add(todo);
+                hasError = true;
+            }
+
+            if (hasError)
+                return response;
+
+            response.acceptedObjects.Add(todo);
+            return response;
+        }
         public async static Task<MainResponse<ToDoDTO>> ToDoDTO(ToDoDTO todo, bool isupdate = false)
         {
             MainResponse<ToDoDTO> response = new MainResponse<ToDoDTO>();
@@ -334,14 +370,15 @@ namespace MyErp.Core.Validation
             Errors<LeadDTO> err = new Errors<LeadDTO>();
             bool hasError = false;
             {
-                var DBuser = await ADO.GetExecuteQueryMySql<Models.Lead>($"select * from Leads  where Name = '{lead.Name}'");
-                if (DBuser.Count() > 0 && !isupdate)
-                {
-                    response.errors?.Add("Lead with this name is found before in database ");
-                    response.rejectedObjects?.Add(lead);
-                    hasError = true;
-                    return response;
-                }
+                lead.PhoneNo?.RemoveAllWhitespace();
+                //var DBuser = await ADO.GetExecuteQueryMySql<Models.Lead>($"select * from Leads  where Name = '{lead.CompanyName}'");
+                //if (DBuser.Count() > 0 && !isupdate)
+                //{
+                //    response.errors?.Add("Lead with this name is found before in database ");
+                //    response.rejectedObjects?.Add(lead);
+                //    hasError = true;
+                //    return response;
+                //}
                 //if (!lead.Name.IsStringValidation())
                 //{
                 //    response.errors.Add("Lead name msut be string only ");
@@ -349,17 +386,21 @@ namespace MyErp.Core.Validation
                 //    hasError = true;
                 //    return response;
                 //}
-                if (!lead.PhoneNo.IsDigitsOrPlusOnly())
+                //if (!lead.PhoneNo.IsDigitsOrPlusOnly())
+                //{
+                //    response.errors.Add("Lead Phone No must be digits only");
+                //    response.rejectedObjects.Add(lead);
+                //    hasError = true;
+                //    return response;
+                //}\
+                if(lead?.Status == null)
                 {
-                    response.errors.Add("Lead Phone No must be digits only");
-                    response.rejectedObjects.Add(lead);
-                    hasError = true;
-                    return response;
+                    lead.Status = LeadStatus.NoAction;
                 }
                 if (!Enum.IsDefined(typeof(LeadStatus), lead.Status))
                 {
-                    response.errors.Add("Invalid lead status.");
-                    response.rejectedObjects.Add(lead);
+                    response.errors?.Add("Invalid lead status.");
+                    response.rejectedObjects?.Add(lead);
                     hasError = true;
                     return response;
                 }

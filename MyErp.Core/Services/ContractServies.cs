@@ -149,7 +149,7 @@ public class ContractServices
     {
         MainResponse<Contract> response = new MainResponse<Contract>();
 
-        var contract = await _unitOfWork.Contracts.DeletePhysical(p => p.Id == id);
+        var contract = await _unitOfWork.Contracts.Delete(p => p.Id == id);
 
         if (contract == null)
         {
@@ -198,12 +198,12 @@ public class ContractServices
             return response;
         }
     }
-    public async Task<MainResponse<Contract>> deleteAll()
+    public async Task<MainResponse<Contract>> deleteAll(string user)
     {
         MainResponse<Contract> response = new MainResponse<Contract>();
         try
         {
-            var deletedLeads = await _unitOfWork.Contracts.DeletePhysical(p => true);
+            var deletedLeads = await _unitOfWork.Contracts.Delete(p => p.CreatedBy == user);
             if (deletedLeads == null || !deletedLeads.Any())
             {
                 response.errors?.Add($"No leads found to delete.");

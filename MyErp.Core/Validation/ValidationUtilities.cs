@@ -319,7 +319,12 @@ namespace MyErp.Core.Validation
             // Allows: + and digits only
             return !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, @"^\+?\d+$");
         }
-
+        public static string RemoveAllWhitespace(this string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : Regex.Replace(value, @"\s+", "");
+        }
         public static bool IsStringValidation(this string? input)
         {
             if (string.IsNullOrWhiteSpace(input))

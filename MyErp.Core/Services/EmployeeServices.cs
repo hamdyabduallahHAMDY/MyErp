@@ -155,7 +155,7 @@ namespace MyErp.Core.Services
         {
             MainResponse<Employee> response = new MainResponse<Employee>();
 
-            var employee = await _unitOfWork.Employees.DeletePhysical(e => e.Id == id);
+            var employee = await _unitOfWork.Employees.Delete(e => e.Id == id);
 
             if (employee == null)
             {
@@ -177,7 +177,7 @@ namespace MyErp.Core.Services
             {
                 foreach (var id in ids)
                 {
-                    var deleted = await _unitOfWork.Employees.DeletePhysical(e => e.Id == id);
+                    var deleted = await _unitOfWork.Employees.Delete(e => e.Id == id);
 
                     if (deleted == null || !deleted.Any())
                     {
@@ -197,12 +197,12 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Employee>> deleteAll()
+        public async Task<MainResponse<Employee>> deleteAll(string user)
         {
             MainResponse<Employee> response = new MainResponse<Employee>();
             try
             {
-                var deletedLeads = await _unitOfWork.Employees.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Employees.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

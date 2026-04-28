@@ -321,7 +321,7 @@ namespace MyErp.Core.Services
             MainResponse<Email> response = new MainResponse<Email>();
 
             var email =
-                await _unitOfWork.Emails.DeletePhysical(e => e.Id == id);
+                await _unitOfWork.Emails.Delete(e => e.Id == id);
 
             if (email == null)
             {
@@ -337,12 +337,12 @@ namespace MyErp.Core.Services
             return response;
         }
 
-        public async Task<MainResponse<Email>> deleteAll()
+        public async Task<MainResponse<Email>> deleteAll(string user)
         {
             MainResponse<Email> response = new MainResponse<Email>();
             try
             {
-                var deletedLeads = await _unitOfWork.Emails.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Emails.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

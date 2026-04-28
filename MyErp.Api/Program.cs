@@ -79,10 +79,13 @@ builder.Services.AddAutoMapper(typeof(Mapping));
 
 // Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<LeadServices>();
+builder.Services.AddScoped<ToDoServices>();
+
 builder.Services.AddScoped<RightsModelServices>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<GetUSerId>();
-builder.Services.AddHostedService<ReminderWorker>();
+//builder.Services.AddHostedService<ReminderWorker>();
 // Identity
 builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -108,7 +111,7 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
 
-    // 🔥 IMPORTANT: SignalR needs this
+    // IMPORTANT: SignalR needs this
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
@@ -150,6 +153,9 @@ app.UseHttpsRedirection();
 
 // Auth
 app.UseAuthentication();
+
+app.UseMiddleware<RequestLogMiddleware>();
+
 app.UseAuthorization();
 
 // Controllers

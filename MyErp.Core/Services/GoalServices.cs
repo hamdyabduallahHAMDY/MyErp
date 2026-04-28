@@ -165,7 +165,7 @@ namespace MyErp.Core.Services
             MainResponse<Goal> response = new MainResponse<Goal>();
 
             var goal =
-                await _unitOfWork.Goals.DeletePhysical(g => g.Id == id);
+                await _unitOfWork.Goals.Delete(g => g.Id == id);
 
             if (goal == null)
             {
@@ -177,12 +177,12 @@ namespace MyErp.Core.Services
 
             return response;
         }
-        public async Task<MainResponse<Goal>> deleteAll()
+        public async Task<MainResponse<Goal>> deleteAll(string user)
         {
             MainResponse<Goal> response = new MainResponse<Goal>();
             try
             {
-                var deletedLeads = await _unitOfWork.Goals.DeletePhysical(p => true);
+                var deletedLeads = await _unitOfWork.Goals.Delete(p => p.CreatedBy == user);
                 if (deletedLeads == null || !deletedLeads.Any())
                 {
                     response.errors?.Add($"No leads found to delete.");

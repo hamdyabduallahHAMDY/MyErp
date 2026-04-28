@@ -93,7 +93,8 @@ namespace MyErp.Api.Controllers
 
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll() { 
-            var result = await UserServices.deleteAll();
+            var user = User.Identity.Name; 
+            var result = await UserServices.deleteAll(user);
             var resultWithStatusCode = ResponseStatusCode<Ticket>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;

@@ -55,7 +55,7 @@ public class CalendarTaskServices
 
         return response;
     }
-
+    
 
     public async Task<MainResponse<CalenderTask>> addCalendarTask(
         CalenderTaskDTO tasks,
@@ -67,11 +67,11 @@ public class CalendarTaskServices
         try
         {
             var validList = await ValidateDTO.CalenderTaskDTO(tasks);
-
+            Logger.Logs.Log($"Validation completed. Accepted: {validList.acceptedObjects?.Count ?? 0}, Rejected: {validList.rejectedObjects?.Count ?? 0}, Errors: {validList.errors?.Count ?? 0}");
             List<CalenderTask> taskList = _mapper.Map<List<CalenderTask>>(validList.acceptedObjects);
             List<CalenderTask> rejectedTasks = _mapper.Map<List<CalenderTask>>(validList.rejectedObjects);
-
-            // ✅ Ensure list is safe
+            
+            //  Ensure list is safe
             var assignedUsers = assignedto ?? new List<string>();
 
             if (taskList != null && taskList.Count > 0)
@@ -81,9 +81,9 @@ public class CalendarTaskServices
                     task.CreatedBy = createdby;
 
                     // (Optional but recommended) keep consistency
-                    task.AssignedTo = string.Join(",", assignedUsers);
-
-                    // 🔥 Create DB notification per user
+                    //  task.AssignedTo = string.Join(",", assignedUsers);
+                    var x = task.AssignedTo;
+                    //  Create DB notification per user
                     foreach (var user in assignedUsers)
                     {
                         var notification = new Notification
@@ -200,7 +200,7 @@ public class CalendarTaskServices
     {
         MainResponse<CalenderTask> response = new MainResponse<CalenderTask>();
 
-        var task = await _unitOfWork.CalenderTasks.DeletePhysical(p => p.Id == id);
+        var task = await _unitOfWork.CalenderTasks.Delete(p => p.Id == id);
 
         if (task == null)
         {
@@ -214,12 +214,12 @@ public class CalendarTaskServices
         return response;
     }
 
-    public async Task<MainResponse<CalenderTask>> deleteAll()
+    public async Task<MainResponse<CalenderTask>> deleteAll(string user)
     {
         MainResponse<CalenderTask> response = new MainResponse<CalenderTask>();
         try
         {
-            var deletedLeads = await _unitOfWork.CalenderTasks.DeletePhysical(p => true);
+            var deletedLeads = await _unitOfWork.CalenderTasks.Delete(p => p.CreatedBy == user);
             if (deletedLeads == null || !deletedLeads.Any())
             {
                 response.errors?.Add($"No leads found to delete.");

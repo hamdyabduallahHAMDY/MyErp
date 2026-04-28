@@ -46,7 +46,9 @@ namespace MyErp.Api.Controllers
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
         {
-            var result = await DocumentServices.deleteAll();
+            var user = User.Identity?.Name;
+
+            var result = await DocumentServices.deleteAll(user);
             var resultWithStatusCode = ResponseStatusCode<Document>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;

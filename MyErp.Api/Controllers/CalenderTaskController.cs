@@ -32,7 +32,8 @@ namespace MyErp.Api.Controllers
         [HttpDelete("deleteAll")]
         public async Task<IActionResult> DeleteAll()
         {
-            var result = await CalendarTasksServices.deleteAll();
+            var user = User.Identity?.Name;
+            var result = await CalendarTasksServices.deleteAll(user);
             var resultWithStatusCode = ResponseStatusCode<CalenderTask>.GetApiResponseCode(result, "HttpDelete");
 
             return resultWithStatusCode;
@@ -70,12 +71,12 @@ namespace MyErp.Api.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> AddCalendarTask([FromBody] CalenderTaskDTO task)
         {
-            var createdby = User.Identity.Name;
+            var createdby = User.Identity?.Name;
 
-            // 🔥 Deserialize usernames
+            //  Deserialize usernames
             var assignedUsernames = JsonSerializer.Deserialize<List<string>>(task.AssignedTo);
 
-            // 🔥 Convert usernames → userIds
+            //  Convert usernames → userIds
             var assignedIds = new List<string>();
 
             foreach (var username in assignedUsernames)

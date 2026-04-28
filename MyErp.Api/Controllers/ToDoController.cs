@@ -1,226 +1,185 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using MyErp.Core.DTO;
 using MyErp.Core.HTTP;
 using MyErp.Core.Models;
 using MyErp.Core.Services;
-using MyErp.EF.DataAccess;
-using MyErp.EF.Repositories;
-using Mysqlx;
-using System.Text.Json;
+using Type = MyErp.Core.Models.Type;
 
 namespace MyErp.Api.Controllers
 {
-    [Route("[controller]/")]
+    [Authorize]
     [ApiController]
-    public class ToDoController : Controller
+    [Route("ToDo")]
+    public class ToDoController : ControllerBase
     {
-        ToDoServices ToDoServices;
-        private readonly IMapper _mapper;
+        private readonly ToDoServices _toDoServices;
         private readonly RightsModelServices _accessService;
-        private readonly GetUSerId _getUSerId;
-        private readonly IHubContext<NotificationHub> _hub;
-        private readonly NotificationService _notificationService;
+        private readonly GetUSerId _getUserId;
+        private readonly IMapper _mapper;
 
         public ToDoController(
-     ApplicationDbContext dbContext,
-     IMapper mapper,
-     RightsModelServices accessService,
-     IHubContext<NotificationHub> hub,
-     NotificationService notificationService,
-     GetUSerId getUSerId
-
- )
+            ToDoServices toDoServices,
+            RightsModelServices accessService,
+            GetUSerId getUserId,
+            IMapper mapper)
         {
-            hub = hub; 
-            UnitOfWork unitOfWork = new UnitOfWork(dbContext);
-            _mapper = mapper; _hub = hub;
-            ToDoServices = new ToDoServices(unitOfWork, _mapper, hub, _notificationService); _accessService = accessService;
-            _notificationService = notificationService;
-            _getUSerId = getUSerId;
+            _toDoServices = toDoServices;
+            _accessService = accessService;
+            _getUserId = getUserId;
+            _mapper = mapper;
         }
 
         [HttpGet("template/todo")]
         public async Task<IActionResult> DownloadToDoTemplate()
         {
-            var fileBytes = await ToDoServices.GenerateToDoExcelTemplate();
+            var fileBytes = await _toDoServices.GenerateToDoExcelTemplate();
 
             return File(
                 fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "ToDo_Template.xlsx"
-            );
-        }
-        //[HttpDelete("deleteAll")]
-        //public async Task<IActionResult> DeleteAll()
-        //{
-        //    var result = await ToDoServices.deleteAll();
-        //    var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
-
-        //    return resultWithStatusCode;
-        //}
-        [HttpGet("GetAllBycCustomer")]
-        public async Task<IActionResult> GetAllByCustomer(string customer)
-        {
-            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
-
-            var result = await ToDoServices.GetAllByOdooCustomerType(usertype,customer);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
+                "ToDo_Template.xlsx");
         }
 
         [HttpGet("getAll")]
-        public async Task<IActionResult> GetToDoList()
+        public async Task<IActionResult> GetAll()
         {
-            var currentUser = User.Identity?.Name;
+            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
 
-            var result = await ToDoServices.GetAll(currentUser);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
+            Logger.Logs.Log($"User : [{currentUser}] requesting all ToDos");
+
+            var result = await _toDoServices.GetAll(allowedUsers);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
         }
 
         [HttpGet("getById")]
-        public async Task<IActionResult> GetToDo(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var result = await ToDoServices.getToDo(id);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.GetById(id, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
         }
 
         [HttpGet("getByStatus")]
-        public async Task<IActionResult> GetbyStatus(int status)
+        public async Task<IActionResult> GetByStatus(int status)
         {
             var currentUser = User.Identity?.Name;
-
-            if (currentUser == null)
-            {
-                return Unauthorized(new
-                {
-                    message = "You must log in first."
-                });
-            }
-
-            var rightsJson = User.Claims.FirstOrDefault(c => c.Type == "Rights")?.Value;
-            List<string> allowedUsers = new List<string>();
-
-            if (!string.IsNullOrEmpty(rightsJson))
-            {
-                var rights = JsonSerializer.Deserialize<RightsModel>(rightsJson);
-
-                if (rights?.allowance != null)
-                    allowedUsers = rights.allowance;
-            }
-
-            // add current user
-            allowedUsers.Add(currentUser);
-
-            var result = await ToDoServices.getByStatus(status, allowedUsers);
-
-            var resultWithStatusCode =
-                ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-
-            return resultWithStatusCode;
+            var result = await _toDoServices.GetByStatus(status, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
         }
-        [Authorize]
-        [HttpPut("updateById")]
-        public async Task<IActionResult> PutToDo(int id, [FromBody] ToDoDTO todoUpdated)
+
+        [HttpGet("GetAllBycCustomer")]
+        public async Task<IActionResult> GetAllByCustomerForOdoo([FromQuery] string customer)
+        {
+            var (currentUser, allowedUsers, isAuth, userType) = _accessService.GetAccessData(User);
+
+            var result = await _toDoServices.GetAllByOdooCustomerType(userType, customer);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+        }
+
+        [HttpGet("Get_By_type")]
+        public async Task<IActionResult> GetByType()
+        {
+            var (currentUser, allowedUsers, isAuth, userType) = _accessService.GetAccessData(User);
+
+            var result = await _toDoServices.GetByType(userType, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+        }
+
+        [HttpGet("Get by Assgined To")]
+        public async Task<IActionResult> GetByAssignedTo([FromQuery] string assignedTo)
         {
             var currentUser = User.Identity?.Name;
-
-            var result = await ToDoServices.updateToDo(id, todoUpdated, currentUser);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
-            return resultWithStatusCode;
+            var result = await _toDoServices.GetByAssignedTo(assignedTo, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
         }
 
-        [HttpPut("UpadteStatus")]
-        public async Task<IActionResult> UpdateStatus(int id, int status)
+        [HttpGet("Get_By_Customer")]
+        public async Task<IActionResult> GetByCustomer([FromQuery] string customer)
         {
-            var result = await ToDoServices.UpdateStatus(id, status);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
-            return resultWithStatusCode;
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.GetByCustomer(customer, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
+        }
+
+        [HttpGet("Get_By_Customer_Type")]
+        public async Task<IActionResult> GetByCustomerType([FromQuery] string customer)
+        {
+            var (currentUser, allowedUsers, isAuth, userType) = _accessService.GetAccessData(User);
+
+            var result = await _toDoServices.GetByCustomerAndType(customer, userType, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
         }
 
         [HttpPost("add")]
-        public async Task<IActionResult> AddToDo([FromBody] ToDoDTO todos)
+        public async Task<IActionResult> Add([FromBody] ToDoDTO dto)
         {
-            //var currentUser = User.Identity?.Name;
-            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
-            var AssginedId = await _getUSerId.GetUserIdByUsernameAsync(todos?.AssignedTo);
-            var result = await ToDoServices.addToDo(todos, currentUser, usertype ,AssginedId );
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
-            return resultWithStatusCode;
+            var (currentUser, allowedUsers, isAuth, userType) = _accessService.GetAccessData(User);
+
+            if (string.IsNullOrWhiteSpace(currentUser))
+            {
+                return Unauthorized(new { message = "You must log in first." });
+            }
+
+            var assignedUserId = await _getUserId.GetUserIdByUsernameAsync(dto?.AssignedTo);
+
+            var result = await _toDoServices.AddToDo(dto, currentUser, userType, assignedUserId);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
         }
 
         [HttpPost("addFromExcel")]
         public async Task<IActionResult> ImportFromExcel(IFormFile file)
         {
-            var result = await ToDoServices.ImportFromExcel(file);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
-            return resultWithStatusCode;
+            var (currentUser, allowedUsers, isAuth, userType) = _accessService.GetAccessData(User);
+
+            if (string.IsNullOrWhiteSpace(currentUser))
+            {
+                return Unauthorized(new { message = "You must log in first." });
+            }
+
+            var result = await _toDoServices.ImportFromExcel(file, currentUser, userType);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPost");
+        }
+
+        [HttpPut("updateById")]
+        public async Task<IActionResult> Update(int id, [FromBody] ToDoDTO dto)
+        {
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.UpdateToDo(id, dto, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
+        }
+
+        [HttpPut("UpadteStatus")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int status)
+        {
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.UpdateStatus(id, status, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpPut");
         }
 
         [HttpDelete("deleteById")]
-        public async Task<IActionResult> DeleteToDo(int id)
+        public async Task<IActionResult> DeleteById(int id)
         {
-            var result = await ToDoServices.deleteToDo(id);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
-            return resultWithStatusCode;
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.DeleteToDo(id, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
         }
 
         [HttpDelete("deleteAll")]
-        public async Task<IActionResult> DeleteAll()
+        public async Task<IActionResult> DeleteAllMine()
         {
-            var result = await ToDoServices.deleteAll();
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
-            return resultWithStatusCode;
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.DeleteAll(currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
         }
 
         [HttpDelete("deleteGroup")]
-        public async Task<IActionResult> DeleteGroup(List<int> ints)
+        public async Task<IActionResult> DeleteGroup([FromBody] List<int> ids)
         {
-            var result = await ToDoServices.deleteGroup(ints);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
-            return resultWithStatusCode;
+            var currentUser = User.Identity?.Name;
+            var result = await _toDoServices.DeleteGroup(ids, currentUser);
+            return ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpDelete");
         }
-
-        [HttpGet("Get by Assgined To")]
-        public async Task<IActionResult> GetbyAssignedTo(string assginedto)
-        {
-            var result = await ToDoServices.GetByAssignedTo(assginedto);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
-        }
-
-        [HttpGet("Get_By_type")]
-        public async Task<IActionResult> GetByType(int type)
-        {
-            var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
-
-            var result = await ToDoServices.getByType(usertype);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
-        }
-        [HttpGet("Get_By_Customer")]
-        public async Task<IActionResult> GetByCustomer(string customer)
-        {
-        //    var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
-
-            var result = await ToDoServices.getByCustomer(customer);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
-        }
-        [HttpGet("Get_By_Customer_Type")]
-        public async Task<IActionResult> GetByCustomerType(string customer)
-        {
-               var (currentUser, allowedUsers, isAuth, usertype) = _accessService.GetAccessData(User);
-
-            var result = await ToDoServices.getByCustomerandType(customer,usertype);
-            var resultWithStatusCode = ResponseStatusCode<ToDo>.GetApiResponseCode(result, "HttpGet");
-            return resultWithStatusCode;
-        }
-
     }
 }
